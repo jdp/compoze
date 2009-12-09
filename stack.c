@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include "compoze.h"
 #include "stack.h"
@@ -51,6 +52,7 @@ czS_pop(cz_stack *s)
 	if (s->top <= 0) {
 		return NULL;
 	}
-	return s->items[s->top--];
+	s->top--;
+	return s->items[s->top+1];
 }
 	

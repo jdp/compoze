@@ -5,6 +5,7 @@
 #include "compoze.h"
 #include "stack.h"
 #include "interpreter.h"
+#include "builtin.h"
 
 cz_interpreter *
 czI_create(cz_node *root)
@@ -72,18 +73,23 @@ czI_error(cz_interpreter *i, char *fmt, ...)
 void
 czI_populate(cz_interpreter *i)
 {
-	czI_register_word(i, "dip", czW_dip);
+	REGISTER(true);
+	REGISTER(false);
+	REGISTER(eq);
+	REGISTER(call);
+	REGISTER(print);
+	REGISTER(println);
+	REGISTER(swap);
+	REGISTER(dip);
 };
 
 int
-czI_interpret(cz_interpreter *i)
+czI_interpret(cz_interpreter *i, cz_node *n)
 {
-	cz_node *n;
 	cz_word *w;
 	int fatal;
 	
 	fatal = 0;
-	n = i->ast;
 	while ((n != NULL) && !fatal) {
 		switch (n->type) {
 			case NODE_NUMBER:
@@ -107,12 +113,5 @@ czI_interpret(cz_interpreter *i)
 		n = n->next;
 	}
 	return fatal ? CZ_ERR : CZ_OK;
-}
-
-/* built-in functions */
-
-BUILTIN(dip)
-{
-	printf("dip!!\n");
 }
 					

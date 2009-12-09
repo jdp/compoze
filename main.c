@@ -19,7 +19,7 @@ main(int argc, char *argv[])
 	/* test interpreter */
 	cz_interpreter *interpreter = czI_create(parser->nodes);
 	czI_populate(interpreter);
-	czI_interpret(interpreter);
+	czI_interpret(interpreter, interpreter->ast);
 	
 	return 0;
 }

@@ -3,7 +3,7 @@
 
 enum { CZ_ERR, CZ_OK };
 
-enum { NODE_QUOTE, NODE_WORD, NODE_NUMBER };
+enum { NODE_QUOTE, NODE_WORD, NODE_NUMBER, NODE_BOOLEAN };
 
 typedef struct cz_node {
 	int type;

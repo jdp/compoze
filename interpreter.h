@@ -1,7 +1,7 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 
-#define BUILTIN(N) void czW_##N(cz_interpreter *i)
+#define REGISTER(N) czI_register_word(i, #N, czW_##N)
 
 enum { E_NOTICE, E_WARNING, E_FATAL };
 
@@ -27,22 +27,20 @@ cz_interpreter *
 czI_create(cz_node *root);
 
 int
-czI_register_word(cz_interpreter *i, char *name, cz_word_fn f);
+czI_register_word(cz_interpreter *, char *, cz_word_fn);
 
 cz_word *
-czI_get_word(cz_interpreter *i, char *name);
+czI_get_word(cz_interpreter *, char *);
 
 void
-czI_error(cz_interpreter *i, char *fmt, ...);
+czI_error(cz_interpreter *, char *, ...);
 
 void
-czI_populate(cz_interpreter *i);
+czI_populate(cz_interpreter *);
 
 int
-czI_interpret(cz_interpreter *i);
+czI_interpret(cz_interpreter *, cz_node *);
 
 /* Built-in word function prototypes */
-
-BUILTIN(dip);
 
 #endif

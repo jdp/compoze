@@ -45,7 +45,7 @@ czP_save(cz_parser *p, int c)
 }
 
 /* Creates and returns a new AST node with the specified type and value. */
-static cz_node *
+cz_node *
 czP_create_node(int type, char *value)
 {
 	cz_node *node = (cz_node*)malloc(sizeof(cz_node));
@@ -92,6 +92,33 @@ czP_add_node(cz_parser *p, cz_node *node)
 }
 
 static void
+czP_parse_comment(cz_parser *p)
+{
+	while (p->current != '\r' && p->current != '\n' && p->current != EOF) {
+		next(p);
+	}
+}
+
+static void
+czP_parse_signature(cz_parser *p)
+{
+	int depth;
+	depth = 1;
+	next(p);
+	while ((depth > 0) && (p->current != EOF)) {
+		switch (p->current) {
+			case '(':
+				depth++;
+				break;
+			case ')':
+				depth--;
+				break;
+		}
+		next(p);
+	}
+}
+
+static void
 czP_parse_number(cz_parser *p)
 {
 	while ((isdigit(p->current)
@@ -129,6 +156,14 @@ czP_parse(cz_parser *p)
 				p->lineno++;
 			case ' ':
 			case '\t':
+				next(p);
+				break;
+			case '#':
+				czP_parse_comment(p);
+				next(p);
+				break;
+			case '(':
+				czP_parse_signature(p);
 				next(p);
 				break;
 			case '[':
