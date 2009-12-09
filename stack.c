@@ -20,6 +20,17 @@ czS_create(int size)
 }
 
 int
+czS_destroy(cz_stack *s)
+{
+	int i;
+	for (i = 0; i <= s->top; i++) {
+		free(s->items[i]);
+	}
+	free(s);
+	return CZ_OK;
+}
+
+int
 czS_push(cz_stack *s, cz_node *n)
 {
 	if (s->top + 1 > s->size) {
