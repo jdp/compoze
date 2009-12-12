@@ -1,0 +1,57 @@
+compoze, a concatenative language
+
+aims
+
+  % simple
+  
+    compoze is intented to be as simple as
+    possible while still being useful. any words
+    that aren't totally necessary probably will
+    not be built-ins.
+  
+  % embeddable
+  
+    it should be trivial to make an application
+    scriptable with compoze.
+  
+  % hackable
+  
+    the source should be clean, clear, well-
+    organized, and documented. this encourages
+    participation in the development of the
+    language.
+  
+current status
+
+  % built-in words
+  
+    true, false, eq, call, print, println, call,
+    dup, swap, dip. more on the way!
+    
+  % quotations
+  
+    compoze has quotations. any words between
+    square brackets will be pushed to the stack
+    as an anonymous function, and are callable
+    with the call word.
+    
+  % numbers
+  
+    numbers are recognized and pushed onto the
+    stack, but there aren't any words to perform
+    operations on them. 
+  
+inspiration
+
+  % factor http://factorcode.org
+  
+  % lua http://lua.org
+  
+  % picol http://antirez.com/page/picol.html
+  
+  % potion http://github.com/whymirror/potion
+  
+about
+
+  (c) 2009 justin poliey http://justinpoliey.com
+  licensed under the mit license
