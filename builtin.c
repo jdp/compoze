@@ -39,7 +39,8 @@ BUILTIN(false)
 
 /*
  * eq ( 'a 'b -> bool )
- * Pushes a boolean representing the equality of the two elements atop the stack
+ * Pushes a boolean representing the equality of the two elements
+ *  atop the stack
  */
 BUILTIN(eq)
 {
@@ -160,7 +161,7 @@ BUILTIN(swap)
 /*
  * dip ('A 'b ('A -> 'C) -> 'C 'b)
  * Removes second value from stack, calls quotation on top of stack,
- * and pushes the removed value back onto the stack
+ *   and pushes the removed value back onto the stack
  */
 BUILTIN(dip)
 {
