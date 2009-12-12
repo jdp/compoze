@@ -2,12 +2,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "compoze.h"
+#include "bufio.h"
 #include "parser.h"
 
+/*
+ * Creates a new parser from a buffered I/O stream.
+ */
 cz_parser *
-czP_create(FILE *in)
+czP_create(cz_bufio *in)
 {
+	int i;
 	cz_parser *p = (cz_parser *)malloc(sizeof(cz_parser));
 	if (p == NULL) {
 		return NULL;
@@ -22,9 +26,44 @@ czP_create(FILE *in)
 	memset(p->buffer, 0, p->bufsize);
 	p->lineno = 0;
 	p->nodes = p->active = NULL;
+	for (i = 0; i < 32; i++) {
+		p->frame[i] = NULL;
+	}
+	p->frameptr = 0;
 	return p;
 }
 
+/*
+ * Destroys a parser.
+ */
+int
+czP_destroy(cz_parser *p)
+{
+	if (p == NULL) {
+		return CZ_ERR;
+	}
+	int i;
+	free(p->buffer);
+	czP_destroy_nodes(p->nodes);
+	free(p);
+	return CZ_OK;
+}
+
+
+/*
+ * Gets the next character available from the parser's input stream.
+ */
+#define next(p) (p->current = czB_getc(p->in))
+
+/*
+ * Resets the token buffer to an empty state for the next token
+ * to be constructed.
+ */
+#define czP_reset_buffer(p) (p->bufused = 0)
+
+/*
+ * Saves a piece of the token currently being built by the parser.
+ */
 static int
 czP_save(cz_parser *p, int c)
 {
@@ -44,7 +83,11 @@ czP_save(cz_parser *p, int c)
 	return CZ_OK;
 }
 
-/* Creates and returns a new AST node with the specified type and value. */
+/*
+ * Creates a generic AST node.
+ * The type is any of the NODE_* constants, and the value is the string
+ *   representation of the value.
+ */
 cz_node *
 czP_create_node(int type, char *value)
 {
@@ -57,6 +100,26 @@ czP_create_node(int type, char *value)
 	node->next = node->prev = node->children = NULL;
 	strcpy(node->value, value);
 	return node;
+}
+
+/*
+ * Recursively destroys the AST nodes in the parse tree.
+ */
+void
+czP_destroy_nodes(cz_node *n)
+{
+	if (n != NULL) {
+		if (n->next != NULL) {
+			czP_destroy_nodes(n->next);
+		}
+		if (n->children != NULL) {
+			czP_destroy_nodes(n->children);
+		}
+		free(n->value);
+		if (n != NULL) {
+			free(n);
+		}
+	}
 }
 
 /*
@@ -74,16 +137,19 @@ czP_add_node(cz_parser *p, cz_node *node)
 		p->active = node;
 	}
 	else {
-		if (p->active->type == NODE_QUOTE) {
-			if (p->active->children == NULL) {
-				p->active->children = node;
-			}
-			else {
+		switch (p->active->type) {
+			case NODE_DEFINE:
+			case NODE_QUOTE:
+				if (p->active->children == NULL) {
+					p->active->children = node;
+				}
+				else {
+					p->active->next = node;
+				}
+				break;
+			default:
 				p->active->next = node;
-			}
-		}
-		else {
-			p->active->next = node;
+				break;
 		}
 		node->prev = p->active;
 		p->active = node;
@@ -121,6 +187,7 @@ czP_parse_signature(cz_parser *p)
 static void
 czP_parse_number(cz_parser *p)
 {
+	cz_node *n;
 	while ((isdigit(p->current)
 	        || p->current == '.'
 	        || p->current == 'e')
@@ -129,12 +196,16 @@ czP_parse_number(cz_parser *p)
 		next(p);
 	}
 	czP_save(p, '\0');
-	czP_add_node(p, czP_create_node(NODE_NUMBER, p->buffer));
+	n = czP_create_node(NODE_NUMBER, p->buffer);
+	n->intval = atoi(n->value);
+	n->floatval = atof(n->value);
+	czP_add_node(p, n);
 }
 
 static void
 czP_parse_word(cz_parser *p)
 {
+	cz_node *n;
 	while (!isspace(p->current)
 	       && (strchr(DELIM, p->current) == NULL)
 		   && (p->current != EOF)) {
@@ -142,12 +213,20 @@ czP_parse_word(cz_parser *p)
 		next(p);
 	}
 	czP_save(p, '\0');
-	czP_add_node(p, czP_create_node(NODE_WORD, p->buffer));
+	n = czP_create_node(NODE_WORD, p->buffer);
+	n->intval = atoi(n->value);
+	n->floatval = atof(n->value);
+	czP_add_node(p, n);
 }
 
+/*
+ * Builds a parse tree.
+ */
 void
 czP_parse(cz_parser *p)
 {
+	int in_def = 0;
+	
 	next(p);
 	for (;;) {
 		switch (p->current) {
@@ -166,6 +245,18 @@ czP_parse(cz_parser *p)
 				czP_parse_signature(p);
 				next(p);
 				break;
+			case ':':
+				if (in_def) {
+					czI_error("can't define within a definition");
+					return;
+				}
+				in_def = 1;
+				next(p);
+				break;
+			case ';':
+				in_def = 0;
+				next(p);
+				break;
 			case '[':
 				/* create quotation */
 				p->frame[p->frameptr++] = czP_create_node(NODE_QUOTE, "#[]");
@@ -174,6 +265,10 @@ czP_parse(cz_parser *p)
 				break;
 			case ']':
 				/* drop down from quotation */
+				if (p->frameptr == 0) {
+					printf("not inside a quotation!\n");
+					return;
+				}
 				p->active = p->frame[--p->frameptr];
 				next(p);
 				break;
@@ -197,6 +292,9 @@ czP_parse(cz_parser *p)
 	}
 }
 
+/*
+ * Debugging function to display a simplified node tree.
+ */
 void
 cz_tree(cz_node *node, int depth)
 {

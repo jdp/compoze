@@ -15,8 +15,10 @@ BUILTIN(true)
 	a = (cz_node *)malloc(sizeof(cz_node));
 	a->type = NODE_BOOLEAN;
 	a->value = "true";
+	a->intval = 1;
 	a->next = a->prev = a->children = NULL;
 	czS_push(i->stack, a);
+	return NULL;
 }
 
 /*
@@ -29,8 +31,10 @@ BUILTIN(false)
 	a = (cz_node *)malloc(sizeof(cz_node));
 	a->type = NODE_BOOLEAN;
 	a->value = "false";
+	a->intval = 0;
 	a->next = a->prev = a->children = NULL;
 	czS_push(i->stack, a);
+	return NULL;
 }
 
 /*
@@ -41,7 +45,7 @@ BUILTIN(eq)
 {
 	cz_node *a, *b;
 	if (i->stack->top < 2) {
-		czI_error(i, "eq: needs 2 elements\n");
+		czI_error(i, ERR_FATAL, "eq: needs 2 elements\n");
 		return;
 	}
 	a = i->stack->items[i->stack->top];
@@ -50,8 +54,20 @@ BUILTIN(eq)
 		czW_false(i);
 	}
 	else {
-		czW_true(i);
+		switch (a->type) {
+			case NODE_BOOLEAN:
+				if (a->intval == b->intval) {
+					czW_true(i);
+				}
+				else {
+					czW_false(i);
+				}
+				break;
+			default:
+				czW_false(i);
+		}
 	}
+	return NULL;
 }
 
 /*
@@ -63,14 +79,15 @@ BUILTIN(call)
 	cz_node *q;
 	q = czS_pop(i->stack);
 	if (q == NULL) {
-		czI_error(i, "call: stack empty\n");
+		czI_error(i, ERR_FATAL, "call: stack empty\n");
 		return;
 	}
 	if (q->type != NODE_QUOTE) {
-		czI_error(i, "call: tos not a quotation\n");
+		czI_error(i, ERR_FATAL, "call: tos not a quotation\n");
 		return;
 	}
 	czI_interpret(i, q->children);
+	return NULL;
 }
 
 /*
@@ -82,10 +99,11 @@ BUILTIN(print)
 	cz_node *n;
 	n = czS_pop(i->stack);
 	if (n == NULL) {
-		czI_error(i, "print: stack empty\n");
+		czI_error(i, ERR_FATAL, "print: stack empty\n");
 		return;
 	}
 	printf("%s", n->value);
+	return NULL;
 }
 
 /*
@@ -97,11 +115,29 @@ BUILTIN(println)
 	cz_node *n;
 	n = czS_pop(i->stack);
 	if (n == NULL) {
-		czI_error(i, "print: stack empty\n");
+		czI_error(i, ERR_FATAL, "print: stack empty\n");
 		return;
 	}
 	printf("%s\n", n->value);
+	return NULL;
 }
+
+/*
+ * dup ( 'a -- 'a 'a )
+ * Duplicates the top value on the stack
+ */
+BUILTIN(dup)
+{
+	cz_node *a;
+	if (i->stack->top < 1) {
+		czI_error(i, ERR_FATAL, "dup: stack empty\n");
+		return;
+	}
+	a = czS_peek(i->stack);
+	czS_push(i->stack, a);
+	return NULL;
+}
+		
 
 /*
  * swap ( 'a 'b -- 'b 'a )
@@ -111,13 +147,14 @@ BUILTIN(swap)
 {
 	cz_node *a, *b;
 	if (i->stack->top < 2) {
-		czI_error(i, "swap: needs 2 elements\n");
+		czI_error(i, ERR_FATAL, "swap: needs 2 elements\n");
 		return;
 	}
 	a = czS_pop(i->stack);
 	b = czS_pop(i->stack);
 	czS_push(i->stack, a);
 	czS_push(i->stack, b);
+	return NULL;
 }
 
 /*
@@ -129,7 +166,7 @@ BUILTIN(dip)
 {
 	cz_node *a, *q;
 	if (i->stack->top < 3) {
-		czI_error(i, "dip: needs 3 elements\n");
+		czI_error(i, ERR_FATAL, "dip: needs 3 elements\n");
 		return;
 	}
 	q = czS_pop(i->stack);
@@ -137,4 +174,5 @@ BUILTIN(dip)
 	czS_push(i->stack, q);
 	czW_call(i);
 	czS_push(i->stack, a);
+	return NULL;
 }

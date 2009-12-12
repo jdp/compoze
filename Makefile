@@ -1,10 +1,11 @@
-SRC = builtin.c interpreter.c stack.c parser.c main.c
+SRC = builtin.c interpreter.c stack.c parser.c bufio.c main.c
 OBJ = ${SRC:.c=.o}
+LIB = -lreadline
 CC = gcc
 OUT = cz
 
 $(OUT): $(OBJ)
-	$(CC) -o $@ $(OBJ)
+	$(CC) -o $@ $(OBJ) $(LIB)
 	
 .c.o:
 	$(CC) -c $<

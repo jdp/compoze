@@ -8,7 +8,7 @@
 #include "builtin.h"
 
 cz_interpreter *
-czI_create(cz_node *root)
+czI_create(void)
 {
 	cz_interpreter *i;
 	
@@ -16,9 +16,17 @@ czI_create(cz_node *root)
 	if (i == NULL) {
 		return NULL;
 	}
-	i->ast = root;
+	i->ast = NULL;
 	i->stack = czS_create(32);
 	return i;
+}
+
+int
+czI_destroy(cz_interpreter *i)
+{
+	czS_destroy(i->stack);
+	czI_unregister_words(i);
+	free(i);
 }
 
 int
@@ -28,18 +36,31 @@ czI_register_word(cz_interpreter *i, char *name, cz_word_fn f)
 	
 	w = czI_get_word(i, name);
 	if (w != NULL) {
-		czI_error(i, "word %s already defined\n", w->name);
+		czI_error(i, ERR_FATAL, "word %s already defined\n", w->name);
 		return CZ_ERR;
 	}
 	w = (cz_word *)malloc(sizeof(cz_word));
 	if (w == NULL) {
-		czI_error(i, "couldn't define %s: out of memory\n", name);
+		czI_error(i, ERR_FATAL, "couldn't define %s: out of memory\n", name);
 		return CZ_ERR;
 	}
 	w->name = strdup(name);
 	w->fn = f;
 	w->next = i->words;
 	i->words = w;
+	return CZ_OK;
+}
+
+int
+czI_unregister_words(cz_interpreter *i)
+{
+	cz_word *w, *next;
+	w = i->words;
+	while (w != NULL) {
+		next = w->next;
+		free(w);
+		w = next;
+	}
 	return CZ_OK;
 }
 
@@ -58,7 +79,7 @@ czI_get_word(cz_interpreter *i, char *name)
 }
 
 void
-czI_error(cz_interpreter *i, char *fmt, ...)
+czI_error(cz_interpreter *i, int level, char *fmt, ...)
 {
 	va_list vl;
 	char buffer[512];
@@ -67,30 +88,31 @@ czI_error(cz_interpreter *i, char *fmt, ...)
 	vsprintf(buffer, fmt, vl);
 	va_end(vl);
 	
+	i->errorlevel = level;
+	
 	fputs(buffer, stderr);
 }
 
 void
 czI_populate(cz_interpreter *i)
 {
-	REGISTER(true);
-	REGISTER(false);
-	REGISTER(eq);
-	REGISTER(call);
-	REGISTER(print);
-	REGISTER(println);
-	REGISTER(swap);
-	REGISTER(dip);
-};
+	czI_register_word(i, "true",    czW_true);
+	czI_register_word(i, "false",   czW_false);
+	czI_register_word(i, "eq",      czW_eq);
+	czI_register_word(i, "call",    czW_call);
+	czI_register_word(i, "print",   czW_eq);
+	czI_register_word(i, "println", czW_println);
+	czI_register_word(i, "dup",     czW_dup);
+	czI_register_word(i, "swap",    czW_swap);
+	czI_register_word(i, "dip",     czW_dip);
+}
 
 int
 czI_interpret(cz_interpreter *i, cz_node *n)
 {
 	cz_word *w;
-	int fatal;
 	
-	fatal = 0;
-	while ((n != NULL) && !fatal) {
+	while ((n != NULL) && (i->errorlevel < ERR_FATAL)) {
 		switch (n->type) {
 			case NODE_NUMBER:
 			case NODE_QUOTE:
@@ -99,19 +121,18 @@ czI_interpret(cz_interpreter *i, cz_node *n)
 			case NODE_WORD:
 				w = czI_get_word(i, n->value);
 				if (w == NULL) {
-					czI_error(i, "word %s undefined\n", n->value);
-					fatal = 1;
+					czI_error(i, ERR_WARNING, "word %s undefined\n", n->value);
 					break;
 				}
 				w->fn(i);
 				break;
 			default:
-				printf("unknown ast node\n");
-				fatal = 1;
+				czI_error(i, ERR_FATAL, "unknown AST node\n");
 				break;
 		}
 		n = n->next;
 	}
-	return fatal ? CZ_ERR : CZ_OK;
+	
+	return (i->errorlevel > ERR_NONE) ? CZ_ERR : CZ_OK;
 }
-					
+
