@@ -2,7 +2,7 @@ SRC = builtin.c interpreter.c stack.c parser.c bufio.c main.c
 OBJ = ${SRC:.c=.o}
 LIB = -lreadline
 CC = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall -W -pedantic -O2 -g
 OUT = cz
 
 $(OUT): $(OBJ)

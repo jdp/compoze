@@ -7,6 +7,10 @@
 #include "interpreter.h"
 #include "builtin.h"
 
+/*
+ * Creates and returns a pointer to a new interpreter.
+ * Returns NULL if there was a problem creating the interpreter.
+ */
 cz_interpreter *
 czI_create(void)
 {
@@ -23,6 +27,11 @@ czI_create(void)
 	return i;
 }
 
+/*
+ * Destroys an interpreter. Also destroys the stack associated
+ *   with the interpreter.
+ * Returns CZ_OK on success, and CZ_ERR on failure.
+ */
 int
 czI_destroy(cz_interpreter *i)
 {
@@ -36,6 +45,10 @@ czI_destroy(cz_interpreter *i)
 	return CZ_OK;
 }
 
+/*
+ * Registers a Compoze word with the interpreter.
+ * Returns CZ_OK on success and CZ_ERR on failure.
+ */
 int
 czI_register_word(cz_interpreter *i, char *name, cz_word_fn f)
 {
@@ -58,6 +71,10 @@ czI_register_word(cz_interpreter *i, char *name, cz_word_fn f)
 	return CZ_OK;
 }
 
+/*
+ * Unregisters all the words from the interpreter, and frees memory
+ *  associated with them.
+ * Returns CZ_OK on success.
 int
 czI_unregister_words(cz_interpreter *i)
 {
@@ -72,6 +89,10 @@ czI_unregister_words(cz_interpreter *i)
 	return CZ_OK;
 }
 
+/*
+ * Returns a pointer to a Compoze word.
+ * Returns NULL if no such word exists.
+ */
 cz_word *
 czI_get_word(cz_interpreter *i, char *name)
 {
@@ -86,6 +107,9 @@ czI_get_word(cz_interpreter *i, char *name)
 	return NULL;
 }
 
+/*
+ * Displays an error message, and sets the interpreter error level.
+ */
 void
 czI_error(cz_interpreter *i, int level, char *fmt, ...)
 {
@@ -101,6 +125,9 @@ czI_error(cz_interpreter *i, int level, char *fmt, ...)
 	fputs(buffer, stderr);
 }
 
+/*
+ * Populates the interpreter with built-in words.
+ */
 void
 czI_populate(cz_interpreter *i)
 {
@@ -116,6 +143,10 @@ czI_populate(cz_interpreter *i)
 	czI_register_word(i, "dip",     czW_dip);
 }
 
+/*
+ * Runs the interpreter, starting at an arbitrary node.
+ * Returns CZ_OK if no errors were raised, CZ_ERR otherwise.
+ */
 int
 czI_interpret(cz_interpreter *i, cz_node *n)
 {
