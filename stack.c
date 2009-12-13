@@ -35,6 +35,7 @@ int
 czS_destroy(cz_stack *s)
 {
 	czS_reset(s);
+	free(s->items);
 	free(s);
 	return CZ_OK;
 }

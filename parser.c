@@ -49,7 +49,6 @@ czP_destroy(cz_parser *p)
 	return CZ_OK;
 }
 
-
 /*
  * Gets the next character available from the parser's input stream.
  */
@@ -96,7 +95,8 @@ czP_create_node(int type, char *value)
 		return NULL;
 	}
 	node->type = type;
-	node->value = (char *)malloc(sizeof(char) * strlen(value));
+	node->value = (char *)malloc(sizeof(char) * strlen(value) + 1);
+	memset(node->value, '\0', strlen(value) + 1);
 	node->next = node->prev = node->children = NULL;
 	strcpy(node->value, value);
 	return node;

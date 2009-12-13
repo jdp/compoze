@@ -17,7 +17,9 @@ czI_create(void)
 		return NULL;
 	}
 	i->ast = NULL;
+	i->words = NULL;
 	i->stack = czS_create(32);
+	i->errorlevel = ERR_NONE;
 	return i;
 }
 
@@ -58,6 +60,7 @@ czI_unregister_words(cz_interpreter *i)
 	w = i->words;
 	while (w != NULL) {
 		next = w->next;
+		free(w->name);
 		free(w);
 		w = next;
 	}
@@ -100,6 +103,7 @@ czI_populate(cz_interpreter *i)
 	czI_register_word(i, "false",   czW_false);
 	czI_register_word(i, "eq",      czW_eq);
 	czI_register_word(i, "call",    czW_call);
+	czI_register_word(i, "apply",   czW_apply);
 	czI_register_word(i, "print",   czW_eq);
 	czI_register_word(i, "println", czW_println);
 	czI_register_word(i, "dup",     czW_dup);
