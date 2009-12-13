@@ -47,7 +47,7 @@ BUILTIN(eq)
 	cz_node *a, *b;
 	if (i->stack->top < 2) {
 		czI_error(i, ERR_FATAL, "eq: needs 2 elements\n");
-		return;
+		return NULL;
 	}
 	a = i->stack->items[i->stack->top];
 	b = i->stack->items[i->stack->top-1];
@@ -81,11 +81,11 @@ BUILTIN(call)
 	q = czS_pop(i->stack);
 	if (q == NULL) {
 		czI_error(i, ERR_FATAL, "call: stack empty\n");
-		return;
+		return NULL;
 	}
 	if (q->type != NODE_QUOTE) {
 		czI_error(i, ERR_FATAL, "call: tos not a quotation\n");
-		return;
+		return NULL;
 	}
 	czI_interpret(i, q->children);
 	return NULL;
@@ -101,7 +101,7 @@ BUILTIN(print)
 	n = czS_pop(i->stack);
 	if (n == NULL) {
 		czI_error(i, ERR_FATAL, "print: stack empty\n");
-		return;
+		return NULL;
 	}
 	printf("%s", n->value);
 	return NULL;
@@ -117,7 +117,7 @@ BUILTIN(println)
 	n = czS_pop(i->stack);
 	if (n == NULL) {
 		czI_error(i, ERR_FATAL, "print: stack empty\n");
-		return;
+		return NULL;
 	}
 	printf("%s\n", n->value);
 	return NULL;
@@ -132,7 +132,7 @@ BUILTIN(dup)
 	cz_node *a;
 	if (i->stack->top < 1) {
 		czI_error(i, ERR_FATAL, "dup: stack empty\n");
-		return;
+		return NULL;
 	}
 	a = czS_peek(i->stack);
 	czS_push(i->stack, a);
@@ -149,7 +149,7 @@ BUILTIN(swap)
 	cz_node *a, *b;
 	if (i->stack->top < 2) {
 		czI_error(i, ERR_FATAL, "swap: needs 2 elements\n");
-		return;
+		return NULL;
 	}
 	a = czS_pop(i->stack);
 	b = czS_pop(i->stack);
@@ -168,7 +168,7 @@ BUILTIN(dip)
 	cz_node *a, *q;
 	if (i->stack->top < 3) {
 		czI_error(i, ERR_FATAL, "dip: needs 3 elements\n");
-		return;
+		return NULL;
 	}
 	q = czS_pop(i->stack);
 	a = czS_pop(i->stack);
