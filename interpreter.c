@@ -103,7 +103,7 @@ czI_populate(cz_interpreter *i)
 	czI_register_word(i, "false",   czW_false);
 	czI_register_word(i, "eq",      czW_eq);
 	czI_register_word(i, "call",    czW_call);
-	czI_register_word(i, "apply",   czW_apply);
+	czI_register_word(i, "apply",   czW_call);
 	czI_register_word(i, "print",   czW_eq);
 	czI_register_word(i, "println", czW_println);
 	czI_register_word(i, "dup",     czW_dup);
