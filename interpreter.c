@@ -26,9 +26,14 @@ czI_create(void)
 int
 czI_destroy(cz_interpreter *i)
 {
-	czS_destroy(i->stack);
-	czI_unregister_words(i);
+	if (czS_destroy(i->stack) == CZ_ERR) {
+		return CZ_ERR;
+	}
+	if (czI_unregister_words(i) == CZ_ERR) {
+		return CZ_ERR;
+	}
 	free(i);
+	return CZ_OK;
 }
 
 int

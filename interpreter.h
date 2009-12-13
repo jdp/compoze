@@ -26,6 +26,9 @@ cz_interpreter *
 czI_create(void);
 
 int
+czI_destroy(cz_interpreter *);
+
+int
 czI_register_word(cz_interpreter *, char *, cz_word_fn);
 
 int

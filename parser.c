@@ -42,7 +42,6 @@ czP_destroy(cz_parser *p)
 	if (p == NULL) {
 		return CZ_ERR;
 	}
-	int i;
 	free(p->buffer);
 	czP_destroy_nodes(p->nodes);
 	free(p);
@@ -247,7 +246,7 @@ czP_parse(cz_parser *p)
 				break;
 			case ':':
 				if (in_def) {
-					czI_error("can't define within a definition");
+					printf("can't define within a definition");
 					return;
 				}
 				in_def = 1;
@@ -298,7 +297,6 @@ czP_parse(cz_parser *p)
 void
 cz_tree(cz_node *node, int depth)
 {
-	int i;
 	while (node != NULL) {
 		if (node->type == NODE_QUOTE) {
 			printf("[ ");

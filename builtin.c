@@ -74,6 +74,7 @@ BUILTIN(eq)
 /*
  * call ( 'A -> )
  * Pops a quotation off of the top of the stack and executes it
+ * Aliased by apply
  */
 BUILTIN(call)
 {
