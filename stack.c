@@ -74,6 +74,11 @@ czS_reset(cz_stack *s)
 int
 czS_push(cz_stack *s, cz_node *n)
 {
+	int i;
+	for (i = 1; i <= s->top; i++) {
+		printf("stack at %d: %s (%p)\n", i, s->items[i]->value, (void*)s->items[i]);
+	}
+	printf("pushing %s\n", n->value);
 	if (s->top + 1 > s->size) {
 		int newsize;
 		newsize = s->size * 2;
@@ -82,7 +87,8 @@ czS_push(cz_stack *s, cz_node *n)
 			return CZ_ERR;
 		}
 	}
-	s->items[++s->top] = n;
+	s->top++;
+	s->items[s->top] = n;
 	return CZ_OK;
 }
 

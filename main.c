@@ -33,11 +33,16 @@ repl(void)
 		parser = czP_create(buf);
 		czP_parse(parser);
 		czI_interpret(interpreter, parser->nodes);
-		for (i = 1; i <= interpreter->stack->top; i++) {
-			printf("%s ", interpreter->stack->items[i]->value);
+		interpreter->errorlevel = ERR_NONE;
+		if (interpreter->stack->top > 0) {
+			for (i = 1; i <= interpreter->stack->top; i++) {
+				printf("%s ", interpreter->stack->items[i]->value);
+			}
+			printf("\n");
 		}
-		printf("\n");
-		czS_reset(interpreter->stack);
+		else {
+			printf("stack empty\n");
+		}
 		czP_destroy(parser);
 	}
 	

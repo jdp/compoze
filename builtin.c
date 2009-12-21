@@ -117,7 +117,7 @@ BUILTIN(println)
 	cz_node *n;
 	n = czS_pop(i->stack);
 	if (n == NULL) {
-		czI_error(i, ERR_FATAL, "print: stack empty\n");
+		czI_error(i, ERR_FATAL, "println: stack empty\n");
 		return NULL;
 	}
 	printf("%s\n", n->value);

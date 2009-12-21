@@ -75,6 +75,7 @@ czI_register_word(cz_interpreter *i, char *name, cz_word_fn f)
  * Unregisters all the words from the interpreter, and frees memory
  *  associated with them.
  * Returns CZ_OK on success.
+ */
 int
 czI_unregister_words(cz_interpreter *i)
 {
