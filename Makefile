@@ -1,8 +1,8 @@
-SRC = builtin.c interpreter.c stack.c parser.c bufio.c main.c
+SRC = bufio.c lexer.c object.c stack.c main.c
 OBJ = ${SRC:.c=.o}
 LIB = -lreadline
 CC = gcc
-CFLAGS = -Wall -W -pedantic -O2 -g
+CFLAGS = -Wall
 OUT = cz
 
 $(OUT): $(OBJ)

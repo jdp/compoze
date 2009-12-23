@@ -5,26 +5,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "compoze.h"
+#include "object.h"
 #include "stack.h"
 
 /*
  * Creates a new stack with the specified size.
  */
-cz_stack *
-czS_create(int size)
+Stack *
+Stack_new(unsigned int size)
 {
-	cz_stack *s;
-	s = (cz_stack *)malloc(sizeof(cz_stack));
+	Stack *s;
+	s = (Stack *)malloc(sizeof(Stack));
 	if (s == NULL) {
 		return NULL;
 	}
 	s->top = 0;
-	s->items = (cz_node **)malloc(sizeof(cz_node *)*size);
+	s->items = (Object **)malloc(sizeof(Object *) * size);
 	if (s->items == NULL) {
 		return NULL;
 	}
 	s->size = size;
-	czS_reset(s);
+	Stack_reset(s);
 	return s;
 }
 
@@ -32,9 +33,9 @@ czS_create(int size)
  * Destroys a stack.
  */
 int
-czS_destroy(cz_stack *s)
+Stack_destroy(Stack *s)
 {
-	czS_reset(s);
+	Stack_reset(s);
 	free(s->items);
 	free(s);
 	return CZ_OK;
@@ -45,24 +46,24 @@ czS_destroy(cz_stack *s)
  *   anything, because they're just references to nodes.
  */
 int
-czS_reset(cz_stack *s)
+Stack_reset(Stack *s)
 {
 	int i;
 	for (i = 0; i < s->size; i++) {
-		s->items[i] = NULL;
+		s->items[i] = CZ_NIL;
 	}
 	s->top = 0;
 	return CZ_OK;
 }
 
 /*
- * czS_empty(cz_stack *s)
+ * Stack_empty(Stack *s)
  * Returns whether or not the stack is empty.
  * Implemented as a macro in stack.h.
  */
 
 /*
- * czS_peek(cz_stack *s)
+ * Stack_peek(Stack *s)
  * Returns the value at the top of the stack without removing it.
  * Implemented as a macro in stack.h.
  */
@@ -72,36 +73,27 @@ czS_reset(cz_stack *s)
  *   necessary.
  */
 int
-czS_push(cz_stack *s, cz_node *n)
+Stack_push(Stack *s, Object *obj)
 {
-	int i;
-	for (i = 1; i <= s->top; i++) {
-		printf("stack at %d: %s (%p)\n", i, s->items[i]->value, (void*)s->items[i]);
-	}
-	printf("pushing %s\n", n->value);
-	if (s->top + 1 > s->size) {
-		int newsize;
-		newsize = s->size * 2;
-		s->items = (cz_node **)realloc(s->items, sizeof(cz_node *)*newsize);
+	if ((s->top + 1) > s->size) {
+		s->items = (Object **)realloc(s->items, sizeof(Object *) * s->size * 2);
 		if (s->items == NULL) {
 			return CZ_ERR;
 		}
 	}
-	s->top++;
-	s->items[s->top] = n;
+	s->items[++(s->top)] = obj;
 	return CZ_OK;
 }
 
 /*
  * Pops a node from the stack.
  */
-cz_node *
-czS_pop(cz_stack *s)
+Object *
+Stack_pop(Stack *s)
 {
 	if (s->top <= 0) {
-		return NULL;
+		return CZ_NIL;
 	}
-	s->top--;
-	return s->items[s->top+1];
+	return s->items[(s->top)--];
 }
 	

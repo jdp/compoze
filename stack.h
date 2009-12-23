@@ -1,29 +1,32 @@
 #ifndef STACK_H
 #define STACK_H
 
-typedef struct cz_stack
+typedef struct stack
 {
-	int top;
-	int size;
-	cz_node **items;
-} cz_stack;
+	int      top;
+	int      size;
+	Object **items;
+} Stack;
 
-#define czS_peek(s) (s->items[s->top])
-#define czS_empty(s) (s->top == 0)
+#define Stack_peek(s)  (s->items[s->top])
+#define Stack_empty(s) (s->top == 0)
 
-cz_stack *
-czS_create(int);
+#define PUSHNUMBER(s,n) (Stack_push(s, (Object *)n))
+#define POPNUMBER(s)    ((Number *)Stack_pop(s))
 
-int
-czS_destroy(cz_stack *);
-
-int
-czS_reset(cz_stack *s);
+Stack *
+Stack_new(unsigned int);
 
 int
-czS_push(cz_stack *, cz_node *);
+Stack_destroy(Stack *);
 
-cz_node *
-czS_pop(cz_stack *);
+int
+Stack_reset(Stack *);
+
+int
+Stack_push(Stack *, Object *);
+
+Object *
+Stack_pop(Stack *);
 
 #endif

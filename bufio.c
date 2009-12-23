@@ -38,6 +38,7 @@ czB_create_from_string(char *str)
 		return NULL;
 	}
 	b->buffer = strdup(str);
+	b->bufsize = strlen(b->buffer);
 	return b;
 }
 

@@ -5,55 +5,81 @@
 #include <readline/history.h>
 #include "compoze.h"
 #include "bufio.h"
-#include "parser.h"
+#include "object.h"
+#include "lexer.h"
 #include "stack.h"
-#include "interpreter.h"
 
 void
 repl(void)
 {
-	int i;
 	char *prompt = "cz> ";
 	char *line;
 	
-	cz_bufio *buf = czB_create();
-	cz_parser *parser;
-	cz_interpreter *interpreter;
-	interpreter = czI_create();
-	czI_populate(interpreter);
+	cz_bufio *buf;
+	Lexer *lex;
+	int token;
 	
 	while (1) {
 		line = readline(prompt);
 		if ((line == NULL) || (strcmp(line, "exit") == 0)) {
 			break;
 		}
-		czB_reset(buf);
-		buf->buffer = line;
-		buf->bufsize = strlen(buf->buffer);
-		parser = czP_create(buf);
-		czP_parse(parser);
-		czI_interpret(interpreter, parser->nodes);
-		interpreter->errorlevel = ERR_NONE;
-		if (interpreter->stack->top > 0) {
-			for (i = 1; i <= interpreter->stack->top; i++) {
-				printf("%s ", interpreter->stack->items[i]->value);
+		buf = czB_create_from_string(line);
+		lex = Lexer_new(buf);
+		while ((token = Lexer_scan(lex)) != T_EOF) {
+			switch (token) {
+				case T_WORD:
+					printf("got word: %s\n", lex->buffer);
+					break;
+				case T_NUMBER:
+					printf("got number: %s\n", lex->buffer);
+					break;
+				default:
+					printf("got token type %d\n", token);
+					break;
 			}
-			printf("\n");
 		}
-		else {
-			printf("stack empty\n");
-		}
-		czP_destroy(parser);
+		czB_destroy(buf);
+		Lexer_destroy(lex);
 	}
 	
-	czB_destroy(buf);
-	czI_destroy(interpreter);
+}
+
+int
+test()
+{
+	Stack *stack;
+	Number *n;
+	
+	if ((stack = Stack_new(16)) == NULL) {
+		printf("couldn't create stack\n");
+		return 0;
+	}
+	else {
+		printf("created stack\n");
+	}
+	
+	n = (Number *)Number_new(5);
+	PUSHNUMBER(stack, n);
+	Stack_push(stack, CZ_NIL);
+	n = POPNUMBER(stack);
+	n = POPNUMBER(stack);
+	if (n->ival == 5) {
+		printf("n should be 5, but is %d\n", n->ival);
+		return 0;
+	}
+	
+	Stack_destroy(stack);
+	return 1;
 }
 
 int
 main(int argc, char *argv[])
 {
-
+	bootstrap();
+	if (test() > 0) {
+		printf("** test successful! **\n");
+	}
 	repl();
 	return 0;
 }
