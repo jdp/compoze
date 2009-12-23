@@ -1,4 +1,4 @@
-SRC = bufio.c lexer.c object.c stack.c main.c
+SRC = bufio.c lexer.c parser.c object.c stack.c main.c
 OBJ = ${SRC:.c=.o}
 LIB = -lreadline
 CC = gcc

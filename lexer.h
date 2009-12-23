@@ -20,7 +20,6 @@ enum
 typedef struct cz_lexer
 {
 	cz_bufio *in;
-	int       token;
 	size_t    bufused;
 	size_t    bufsize;
 	char     *buffer;

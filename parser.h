@@ -1,40 +1,47 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#define MAX_SIZET ((size_t)(~(size_t)0)-2)
-#define DELIM "[]:;"
+enum {
+	NODE_DEFINE,
+	NODE_QUOTE,
+	NODE_WORD,
+	NODE_NUMBER
+};
 
-typedef struct cz_parser
+typedef struct cz_node {
+	int             type;
+	char           *value;
+	struct cz_node *next;
+	struct cz_node *prev;
+	struct cz_node *children;
+} Node;
+
+typedef struct Parser
 {
 	cz_bufio *in;
-	
-	char *buffer;
-	char current;
-	size_t bufsize, bufused;
-	
-	int lineno;
-	
-	cz_node *nodes, *active;
-	cz_node *frame[32];
-	int frameptr;
+	int       lineno;
+	Node     *nodes;
+	Node     *active;
+	Node     *frame[32];
+	int       frameptr;
 } Parser;
 
-cz_parser *
-czP_create(cz_bufio *);
+Parser *
+Parser_new(void);
 
 int
-czP_destroy(cz_parser *);
+Parser_destroy(Parser *);
 
-cz_node *
-czP_create_node(int, char *);
-
-void
-czP_destroy_nodes(cz_node *);
+Node *
+Parser_create_node(int, char *);
 
 void
-czP_parse(cz_parser *);
+Parser_destroy_nodes(Node *);
+
+int
+Parser_parse(Parser *, Lexer *);
 
 void
-cz_tree(cz_node *, int);
+cz_tree(Node *, int);
 
 #endif /* PARSER_H */

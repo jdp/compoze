@@ -7,6 +7,7 @@
 #include "bufio.h"
 #include "object.h"
 #include "lexer.h"
+#include "parser.h"
 #include "stack.h"
 
 void
@@ -17,7 +18,7 @@ repl(void)
 	
 	cz_bufio *buf;
 	Lexer *lex;
-	int token;
+	Parser *par;
 	
 	while (1) {
 		line = readline(prompt);
@@ -26,19 +27,10 @@ repl(void)
 		}
 		buf = czB_create_from_string(line);
 		lex = Lexer_new(buf);
-		while ((token = Lexer_scan(lex)) != T_EOF) {
-			switch (token) {
-				case T_WORD:
-					printf("got word: %s\n", lex->buffer);
-					break;
-				case T_NUMBER:
-					printf("got number: %s\n", lex->buffer);
-					break;
-				default:
-					printf("got token type %d\n", token);
-					break;
-			}
-		}
+		par = Parser_new();
+		Parser_parse(par, lex);
+		cz_tree(par->nodes, 0);
+		printf("\n");
 		czB_destroy(buf);
 		Lexer_destroy(lex);
 	}

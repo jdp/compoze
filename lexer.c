@@ -29,7 +29,7 @@ Lexer_new(cz_bufio *in)
 }
 
 /*
- * Destroys a parser.
+ * Destroys a lexer.
  */
 int
 Lexer_destroy(Lexer *l)
@@ -43,7 +43,7 @@ Lexer_destroy(Lexer *l)
 }
 
 /*
- * Gets the next character available from the parser's input stream.
+ * Gets the next character available from the lexer's input stream.
  */
 #define next(l) (l->current = czB_getc(l->in))
 
