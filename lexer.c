@@ -24,7 +24,7 @@ Lexer_new(cz_bufio *in)
 		return NULL;
 	}
 	memset(l->buffer, 0, l->bufsize);
-	l->current = '\0';
+	l->current = -2;
 	return l;
 }
 
@@ -51,7 +51,7 @@ Lexer_destroy(Lexer *l)
  * Resets the token buffer to an empty state for the next token
  * to be constructed.
  */
-#define reset_buffer(p) (l->bufused = 0)
+#define reset(p) (l->bufused = 0)
 
 /*
  * Saves a piece of the token currently being built by the lexer.
@@ -130,11 +130,17 @@ scan_word(Lexer *l)
 int
 Lexer_scan(Lexer *l)
 {
-	next(l);
+	if (l->current == -2) {
+		next(l);
+	}
 	for (;;) {
+		#ifdef DEBUG
+		printf("current: '%c' %X\n", l->current, l->current);
+		#endif
 		switch (l->current) {
 			case '\n':
 			case '\r':
+				next(l);
 				return T_EOL;
 			case ' ':
 			case '\t':
@@ -149,23 +155,22 @@ Lexer_scan(Lexer *l)
 				next(l);
 				break;
 			case ':':
+				next(l);
 				return T_BDEF;
-				break;
 			case ';':
+				next(l);
 				return T_EDEF;
-				break;
 			case '[':
+				next(l);
 				return T_BQUOTE;
-				break;
 			case ']':
+				next(l);
 				return T_EQUOTE;
-				break;
 			case '\0':
 			case EOF:
 				return T_EOF;
-				break;
 			default:
-				reset_buffer(l);
+				reset(l);
 				if (isdigit(l->current)) {
 					scan_number(l);
 					return T_NUMBER;

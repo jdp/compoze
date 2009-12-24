@@ -4,8 +4,8 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "compoze.h"
-#include "bufio.h"
 #include "object.h"
+#include "bufio.h"
 #include "lexer.h"
 #include "parser.h"
 #include "stack.h"
@@ -28,8 +28,7 @@ repl(void)
 		buf = czB_create_from_string(line);
 		lex = Lexer_new(buf);
 		par = Parser_new();
-		Parser_parse(par, lex);
-		cz_tree(par->nodes, 0);
+		cz_tree((Quotation *)Parser_parse(par, lex), 0);
 		printf("\n");
 		czB_destroy(buf);
 		Lexer_destroy(lex);

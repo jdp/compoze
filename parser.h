@@ -1,28 +1,21 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-enum {
+enum
+{
 	NODE_DEFINE,
 	NODE_QUOTE,
 	NODE_WORD,
 	NODE_NUMBER
 };
 
-typedef struct cz_node {
-	int             type;
-	char           *value;
-	struct cz_node *next;
-	struct cz_node *prev;
-	struct cz_node *children;
-} Node;
-
-typedef struct Parser
+typedef struct cz_parser
 {
 	cz_bufio *in;
 	int       lineno;
-	Node     *nodes;
-	Node     *active;
-	Node     *frame[32];
+	Object   *root,
+	         *active,
+	         *frame[32];
 	int       frameptr;
 } Parser;
 
@@ -33,15 +26,16 @@ int
 Parser_destroy(Parser *);
 
 Node *
-Parser_create_node(int, char *);
+Node_new(int, char *);
 
 void
-Parser_destroy_nodes(Node *);
+Node_destroy(Node *);
 
-int
+Object *
 Parser_parse(Parser *, Lexer *);
 
 void
-cz_tree(Node *, int);
+cz_tree(Quotation *, int);
 
 #endif /* PARSER_H */
+

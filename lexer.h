@@ -36,3 +36,4 @@ int
 Lexer_scan(Lexer *);
 
 #endif /* LEXER_H */
+

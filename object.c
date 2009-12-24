@@ -27,6 +27,7 @@ VTable *vtable_vt;
 VTable *object_vt;
 VTable *symbol_vt;
 VTable *number_vt;
+VTable *string_vt;
 VTable *quotation_vt;
 
 Object *s_addMethod = 0;
@@ -40,9 +41,6 @@ alloc(size_t size)
 	VTable **ppvt= (VTable **)calloc(1, sizeof(VTable *) + size);
 	return (void *)(ppvt + 1);
 }
-
-Object *
-VTable_lookup(VTable *self, Object *key);
 
 Method
 bind(Object *rcv, Object *msg)
@@ -116,9 +114,9 @@ VTable_lookup(VTable *self, Object *key)
 Object *
 Symbol_new(char *string)
 {
-	Symbol *self = (Symbol *)alloc(sizeof(Symbol));
+	Symbol *self  = (Symbol *)alloc(sizeof(Symbol));
 	self->_vt[-1] = symbol_vt;
-	self->string = strdup(string);
+	self->string  = strdup(string);
 	return (Object *)self;
 }
 
@@ -143,9 +141,9 @@ Symbol_intern(Object *self, char *string)
 Object *
 Number_new(int val)
 {
-	Number *self = (Number *)send(vtable_vt, s_allocate, sizeof(Number));
+	Number *self  = (Number *)send(vtable_vt, s_allocate, sizeof(Number));
 	self->_vt[-1] = number_vt;
-	self->ival = val;
+	self->ival    = val;
 	return (Object *)self;
 }
 
@@ -161,9 +159,9 @@ Object *
 Quotation_new(void)
 {
 	Quotation *self = (Quotation *)send(vtable_vt, s_allocate, sizeof(Quotation));
-	self->_vt[-1] = quotation_vt;
-	self->size = 0;
-	self->cap = 0;
+	self->_vt[-1]   = quotation_vt;
+	self->size      = 0;
+	self->cap       = 0;
 	return (Object *)self;
 }
 
@@ -173,6 +171,7 @@ Quotation_append(Object *self, Object *object)
 	Quotation *q = (Quotation *)self;
 	if ((q->size + 1) > q->cap) {
 		q->items = (Object **)realloc(q->items, sizeof(Object *) * (q->cap + 1) * 2);
+		q->cap = (q->cap + 1) * 2;
 	}
 	q->items[q->size++] = object;
 	return object;

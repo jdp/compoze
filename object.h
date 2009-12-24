@@ -17,80 +17,18 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-struct vtable;
-struct object;
-struct symbol;
-struct string;
+extern struct cz_vtable *symbol_list;
 
-typedef struct object *(*Method)(struct object *receiver, ...);
+extern struct cz_vtable *vtable_vt;
+extern struct cz_vtable *object_vt;
+extern struct cz_vtable *symbol_vt;
+extern struct cz_vtable *number_vt;
+extern struct cz_vtable *quotation_vt;
 
-#define CZ_OBJECT_HEADER   \
-	struct vtable *_vt[0]; \
-	int            refct
-
-typedef struct vtable
-{
-	CZ_OBJECT_HEADER;
-	int             size;
-	int             tally;
-	struct object **keys;
-	struct object **values;
-	struct vtable  *parent;
-} VTable;
-
-typedef struct object {
-	CZ_OBJECT_HEADER;
-} Object;
-
-typedef struct symbol
-{
-	CZ_OBJECT_HEADER;
-	char *string;
-} Symbol;
-
-typedef struct number
-{
-	CZ_OBJECT_HEADER;
-	union
-	{
-		int ival;
-		double dval;
-	};
-} Number;
-
-typedef struct quotation
-{
-	CZ_OBJECT_HEADER;
-	int             size;
-	int             cap;
-	struct object **items;
-} Quotation;
-
-#define send(RCV, MSG, ARGS...) ({             \
-	struct object *r = (struct object *)(RCV); \
-	Method         m = bind(r, (MSG));         \
-	m(r, ##ARGS);                              \
-})
-
-#define incref(o) (o->refct++)
-#define decref(o) (o->refct--)
-
-#define CZ_NIL      ((Object *)0)
-#define CZ_TRUE     ((Object *)1)
-#define CZ_FALSE    ((Object *)2)
-#define CZ_ISNIL(o) ((Object *)o == CZ_NIL)
-
-extern struct vtable *symbol_list;
-
-extern struct vtable *vtable_vt;
-extern struct vtable *object_vt;
-extern struct vtable *symbol_vt;
-extern struct vtable *number_vt;
-
-extern struct object *s_addMethod;
-extern struct object *s_allocate;
-extern struct object *s_delegated;
-extern struct object *s_lookup;
+extern struct cz_object *s_addMethod;
+extern struct cz_object *s_allocate;
+extern struct cz_object *s_delegated;
+extern struct cz_object *s_lookup;
 
 void
 bootstrap(void);
@@ -98,28 +36,34 @@ bootstrap(void);
 inline void *
 alloc(size_t);
 
-struct object *
-VTable_lookup(struct vtable *, struct object *);
+struct cz_object *
+VTable_lookup(struct cz_vtable *, struct cz_object *);
 
 Method
-bind(struct object *, struct object *);
+bind(struct cz_object *, struct cz_object *);
 
-struct vtable *
-VTable_delegated(struct vtable *);
+struct cz_vtable *
+VTable_delegated(struct cz_vtable *);
 
-struct object *
-VTable_allocate(struct vtable *, int);
+struct cz_object *
+VTable_allocate(struct cz_vtable *, int);
 
 Method
-VTable_addMethod(struct vtable *, struct object *, Method);
+VTable_addMethod(struct cz_vtable *, struct cz_object *, Method);
 
-struct object *
+struct cz_object *
 Symbol_new(char *);
 
-struct object *
-Symbol_intern(struct object *, char *);
+struct cz_object *
+Symbol_intern(struct cz_object *, char *);
 
 Object *
 Number_new(int val);
+
+Object *
+Quotation_new(void);
+
+Object *
+Quotation_append(Object *, Object *);
 
 #endif /* OBJECT_H */

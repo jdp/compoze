@@ -3,6 +3,9 @@ OBJ = ${SRC:.c=.o}
 LIB = -lreadline
 CC = gcc
 CFLAGS = -Wall
+ifdef DEBUG
+	CFLAGS += -DDEBUG
+endif
 OUT = cz
 
 $(OUT): $(OBJ)
