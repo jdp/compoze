@@ -25,17 +25,11 @@ Parser_new(void);
 int
 Parser_destroy(Parser *);
 
-Node *
-Node_new(int, char *);
-
-void
-Node_destroy(Node *);
-
 Object *
-Parser_parse(Parser *, Lexer *);
+Parser_parse(Parser *, CzState *, Lexer *);
 
 void
-cz_tree(Quotation *, int);
+cz_tree(CzState *, Quotation *, int);
 
 #endif /* PARSER_H */
 

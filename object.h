@@ -17,53 +17,30 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-extern struct cz_vtable *symbol_list;
+#define CZ_SYMBOL(s) (Symbol_new(cz, s))
 
-extern struct cz_vtable *vtable_vt;
-extern struct cz_vtable *object_vt;
-extern struct cz_vtable *symbol_vt;
-extern struct cz_vtable *number_vt;
-extern struct cz_vtable *quotation_vt;
-
-extern struct cz_object *s_addMethod;
-extern struct cz_object *s_allocate;
-extern struct cz_object *s_delegated;
-extern struct cz_object *s_lookup;
-
-void
-bootstrap(void);
+int
+bootstrap(CzState *);
 
 inline void *
 alloc(size_t);
 
-struct cz_object *
-VTable_lookup(struct cz_vtable *, struct cz_object *);
+Object *
+VTable_lookup(CzState *, VTable *, Object *);
+
+VTable *
+VTable_delegated(CzState *, VTable *);
+
+Object *
+VTable_allocate(CzState *, VTable *, int);
 
 Method
-bind(struct cz_object *, struct cz_object *);
-
-struct cz_vtable *
-VTable_delegated(struct cz_vtable *);
-
-struct cz_object *
-VTable_allocate(struct cz_vtable *, int);
+VTable_addMethod(CzState *, VTable *, Object *, Method);
 
 Method
-VTable_addMethod(struct cz_vtable *, struct cz_object *, Method);
-
-struct cz_object *
-Symbol_new(char *);
-
-struct cz_object *
-Symbol_intern(struct cz_object *, char *);
+bind(CzState *, Object *, Object *);
 
 Object *
-Number_new(int val);
-
-Object *
-Quotation_new(void);
-
-Object *
-Quotation_append(Object *, Object *);
+Symbol_new(CzState *, char *);
 
 #endif /* OBJECT_H */

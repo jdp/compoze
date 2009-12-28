@@ -7,6 +7,8 @@
 #include "object.h"
 #include "lexer.h"
 #include "parser.h"
+#include "number.h"
+#include "quotation.h"
 
 /*
  * Creates a new parser.
@@ -45,7 +47,7 @@ Parser_destroy(Parser *p)
  * Builds a quotation from the token stream.
  */
 Object *
-Parser_parse(Parser *p, Lexer *l)
+Parser_parse(Parser *p, CzState *cz, Lexer *l)
 {
 	Object *q, *o;
 	int in_def = 0;
@@ -53,7 +55,7 @@ Parser_parse(Parser *p, Lexer *l)
 	
 	/* the first entry on the quote frame is the quote that gets
 	   returned by this function */
-	q = Quotation_new();
+	q = Quotation_new(cz);
 	p->frame[p->frameptr] = q;
 	p->active = p->frame[p->frameptr];
 	
@@ -81,8 +83,8 @@ Parser_parse(Parser *p, Lexer *l)
 				
 			/* Begin quoted code */
 			case T_BQUOTE:
-				p->frame[++p->frameptr] = Quotation_new();
-				Quotation_append(p->active, p->frame[p->frameptr]);
+				p->frame[++p->frameptr] = Quotation_new(cz);
+				Quotation_append(cz, p->active, p->frame[p->frameptr]);
 				p->active = p->frame[p->frameptr];
 				break;
 				
@@ -97,14 +99,14 @@ Parser_parse(Parser *p, Lexer *l)
 				
 			/* Add a word to the quotation, as a symbol */
 			case T_WORD:
-				o = Symbol_intern(0, l->buffer);
-				Quotation_append(p->active, o);
+				o = Symbol_new(cz, l->buffer);
+				Quotation_append(cz, p->active, o);
 				break;
 				
 			/* Add a number to the quotation */
 			case T_NUMBER:
-				o = Number_new(atoi(l->buffer));
-				Quotation_append(p->active, o);
+				o = Number_new(cz, atoi(l->buffer));
+				Quotation_append(cz, p->active, o);
 				break;
 				
 			/* facepalm */
@@ -121,13 +123,13 @@ Parser_parse(Parser *p, Lexer *l)
  * Debugging function to display a simplified node tree.
  */
 void
-cz_tree(Quotation *q, int depth)
+cz_tree(CzState *cz, Quotation *q, int depth)
 {
 	int i;
 	for (i = 0; i < q->size; i++) {
-		if (q->items[i]->_vt[-1] == quotation_vt) {
+		if (q->items[i]->_vt[-1] == cz->quotation_vt) {
 			printf("[ ");
-			cz_tree((Quotation *)q->items[i], depth+1);
+			cz_tree(cz, (Quotation *)q->items[i], depth+1);
 			printf("] ");
 		}
 		else {

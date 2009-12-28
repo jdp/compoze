@@ -21,20 +21,6 @@
 #include "khash.h"
 #include "object.h"
 
-VTable *symbol_list = 0;
-
-VTable *vtable_vt;
-VTable *object_vt;
-VTable *symbol_vt;
-VTable *number_vt;
-VTable *string_vt;
-VTable *quotation_vt;
-
-Object *s_addMethod = 0;
-Object *s_allocate  = 0;
-Object *s_delegated = 0;
-Object *s_lookup    = 0;
-
 inline void *
 alloc(size_t size)
 {
@@ -42,22 +28,12 @@ alloc(size_t size)
 	return (void *)(ppvt + 1);
 }
 
-Method
-bind(Object *rcv, Object *msg)
-{
-	Method  m;
-	VTable *vt = rcv->_vt[-1];
-	m = ((msg == s_lookup) && (rcv == (Object *)vtable_vt))
-	  ? (Method)VTable_lookup(vt, msg)
-	  : (Method)send(vt, s_lookup, msg);
-	return m;
-}
-
 VTable *
-VTable_delegated(VTable *self)
+VTable_delegated(CzState *cz, VTable *self)
 {
 	VTable *child  = (VTable *)alloc(sizeof(VTable));
 	child->_vt[-1] = self ? self->_vt[-1] : 0;
+	child->hash    = (Object *)(self ? self->_vt[-1] : 0);
 	child->size    = 2;
 	child->tally   = 0;
 	child->keys    = (Object **)calloc(child->size, sizeof(Object *));
@@ -67,7 +43,7 @@ VTable_delegated(VTable *self)
 }
 
 Object *
-VTable_allocate(VTable *self, int payloadSize)
+VTable_allocate(CzState *cz, VTable *self, int payloadSize)
 {
 	Object *object = (Object *)alloc(payloadSize);
 	object->_vt[-1] = self;
@@ -75,10 +51,10 @@ VTable_allocate(VTable *self, int payloadSize)
 }
 
 Method
-VTable_addMethod(VTable *self, Object *key, Method method)
+VTable_addMethod(CzState *cz, VTable *self, Object *key, Method method)
 {
 	int i;
-	for (i = 0;  i < self->tally;  ++i) {
+	for (i = 0; i < self->tally; ++i) {
 		if (key == self->keys[i]) {
 			return (Method)(self->values[i] = (Object *)method);
 		}
@@ -94,113 +70,98 @@ VTable_addMethod(VTable *self, Object *key, Method method)
 }
 
 Object *
-VTable_lookup(VTable *self, Object *key)
+VTable_lookup(CzState *cz, VTable *self, Object *key)
 {
 	int i;
-	for (i = 0;  i < self->tally;  ++i) {
+	for (i = 0; i < self->tally;  ++i) {
 		if (key == self->keys[i]) {
 			return self->values[i];
 		}
 	}
 	if (self->parent) {
-		return send(self->parent, s_lookup, key);
+		return send(self->parent, CZ_SYMBOL("lookup"), key);
 	}
-	fprintf(stderr, "lookup failed %p %s\n", self, ((Symbol *)key)->string);
-	return 0;
+	return CZ_NIL;
 }
 
-/* Stuff for Symbols */
-
-Object *
-Symbol_new(char *string)
+Method
+bind(CzState *cz, Object *rcv, Object *msg)
 {
-	Symbol *self  = (Symbol *)alloc(sizeof(Symbol));
-	self->_vt[-1] = symbol_vt;
-	self->string  = strdup(string);
-	return (Object *)self;
+	Method m;
+	VTable *vt = rcv->_vt[-1];
+	m = ((msg == CZ_SYMBOL("lookup")) && (rcv == (Object *)cz->vtable_vt))
+      ? (Method)VTable_lookup(0, vt, msg)
+      : (Method)send(vt, CZ_SYMBOL("lookup"), msg);
+	return m;
 }
 
 Object *
-Symbol_intern(Object *self, char *string)
+Symbol_new(CzState *cz, char *string)
 {
 	Object *symbol;
 	int i;
-	for (i = 0;  i < symbol_list->tally;  ++i) {
-		symbol = symbol_list->keys[i];
+	for (i = 0;  i < cz->symbols->tally;  ++i) {
+		symbol = cz->symbols->keys[i];
 		if (!strcmp(string, ((Symbol *)symbol)->string)) {
 			return symbol;
 		}
 	}
-	symbol = Symbol_new(string);
-	VTable_addMethod(symbol_list, symbol, 0);
+	symbol = alloc(sizeof(Symbol));
+	symbol->_vt[-1] = cz->symbol_vt;
+	symbol->hash = djb2_hash(string);
+	((Symbol *)symbol)->string = strdup(string);
+	VTable_addMethod(cz, cz->symbols, symbol, 0);
 	return symbol;
 }
 
-/* Stuff for Numbers */
-
 Object *
-Number_new(int val)
+Symbol_hash(CzState *cz, Object *self)
 {
-	Number *self  = (Number *)send(vtable_vt, s_allocate, sizeof(Number));
-	self->_vt[-1] = number_vt;
-	self->ival    = val;
-	return (Object *)self;
+	return self->hash;
+}
+
+CzType
+cz_type(Object *obj)
+{
+	if (CZ_IS_NIL(obj)) {
+		return CZ_TNIL;
+	}
+	if (CZ_IS_BOOL(obj)) {
+		return CZ_TBOOLEAN;
+	}
+	return obj->_vt[-1];
 }
 
 int
-Number_value(Object *self)
+bootstrap(CzState *cz)
 {
-	return ((Number *)self)->ival;
-}
+	printf("booting straps...\n");
+	
+	cz->vtable_vt          = VTable_delegated(cz, 0);
+	cz->vtable_vt->_vt[-1] = cz->vtable_vt;
 
-/* Stuff for Quotations */
+	cz->object_vt          = VTable_delegated(cz, 0);
+	cz->object_vt->_vt[-1] = cz->vtable_vt;
+	cz->vtable_vt->parent  = cz->object_vt;
 
-Object *
-Quotation_new(void)
-{
-	Quotation *self = (Quotation *)send(vtable_vt, s_allocate, sizeof(Quotation));
-	self->_vt[-1]   = quotation_vt;
-	self->size      = 0;
-	self->cap       = 0;
-	return (Object *)self;
-}
+	cz->symbol_vt    = VTable_delegated(cz, cz->object_vt);
+	cz->number_vt    = VTable_delegated(cz, cz->object_vt);
+	cz->quotation_vt = VTable_delegated(cz, cz->object_vt);
+	cz->list_vt      = VTable_delegated(cz, cz->object_vt);
+	cz->pair_vt      = VTable_delegated(cz, cz->object_vt);
+	cz->table_vt     = VTable_delegated(cz, cz->object_vt);
 
-Object *
-Quotation_append(Object *self, Object *object)
-{
-	Quotation *q = (Quotation *)self;
-	if ((q->size + 1) > q->cap) {
-		q->items = (Object **)realloc(q->items, sizeof(Object *) * (q->cap + 1) * 2);
-		q->cap = (q->cap + 1) * 2;
-	}
-	q->items[q->size++] = object;
-	return object;
-}
+	cz->symbols = VTable_delegated(cz, 0);
 
-void
-bootstrap(void)
-{
-	vtable_vt = VTable_delegated(0);
-	vtable_vt->_vt[-1] = vtable_vt;
+	VTable_addMethod(cz, cz->vtable_vt, CZ_SYMBOL("lookup"),    (Method)VTable_lookup);
+	VTable_addMethod(cz, cz->vtable_vt, CZ_SYMBOL("addMethod"), (Method)VTable_addMethod);
 
-	object_vt = VTable_delegated(0);
-	object_vt->_vt[-1] = vtable_vt;
-	vtable_vt->parent = object_vt;
-
-	symbol_vt = VTable_delegated(object_vt);
-	number_vt = VTable_delegated(object_vt);
-	quotation_vt = VTable_delegated(object_vt);
-
-	symbol_list = VTable_delegated(0);
-
-	s_lookup    = Symbol_intern(0, "lookup");
-	s_addMethod = Symbol_intern(0, "addMethod");
-	s_allocate  = Symbol_intern(0, "allocate");
-	s_delegated = Symbol_intern(0, "delegated");
-
-	VTable_addMethod(vtable_vt, s_lookup,    (Method)VTable_lookup);
-	VTable_addMethod(vtable_vt, s_addMethod, (Method)VTable_addMethod);
-
-	send(vtable_vt, s_addMethod, s_allocate,    VTable_allocate);
-	send(vtable_vt, s_addMethod, s_delegated,   VTable_delegated);
+	send(cz->vtable_vt, CZ_SYMBOL("addMethod"), CZ_SYMBOL("allocate"),  VTable_allocate);
+	send(cz->vtable_vt, CZ_SYMBOL("addMethod"), CZ_SYMBOL("delegated"), VTable_delegated);
+	
+	send(cz->symbol_vt, CZ_SYMBOL("addMethod"), CZ_SYMBOL("hash"), Symbol_hash);
+	
+	printf("straps booted.\n");
+	
+	return CZ_OK;
 }
