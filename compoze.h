@@ -120,13 +120,13 @@ typedef struct cz_quotation
 
 #define send(RCV, MSG, ARGS...) ({                   \
 	struct cz_object *r = (struct cz_object *)(RCV); \
-	cz_method         m = bind(cz, r, (MSG));        \
+	cz_methodfn       m = bind(cz, r, (MSG));        \
 	m(cz, r, ##ARGS);                                \
 })
 
 #define senddrop(RCV, MSG, ARGS...) ({               \
 	struct cz_object *r = (struct cz_object *)(RCV); \
-	cz_method         m = bind(cz, r, (MSG));        \
+	cz_methodfn       m = bind(cz, r, (MSG));        \
 	struct cz_object *o = m(cz, r, ##ARGS);          \
 	Stack_pop(cz->stack);                            \
 	o;                                               \

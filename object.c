@@ -72,7 +72,7 @@ VTable_lookup(CzState *cz, VTable *self, Object *key)
 		return value;
 	}
 	if (self->parent) {
-		return send(self->parent, CZ_SYMBOL("lookup"), key);
+		return send(self->parent, CZ_SYMBOL("__lookup__"), key);
 	}
 	return CZ_NIL;
 }
@@ -83,9 +83,9 @@ bind(CzState *cz, Object *rcv, Object *msg)
 	Method m;
 	VTable *vt = rcv->_vt[-1];
 	
-	m = ((msg == CZ_SYMBOL("lookup")) && (rcv == (Object *)CZ_VTABLE(CZ_TVTABLE)))
+	m = ((msg == CZ_SYMBOL("__lookup__")) && (rcv == (Object *)CZ_VTABLE(CZ_TVTABLE)))
       ? (Method)VTable_lookup(0, vt, msg)
-      : (Method)send(vt, CZ_SYMBOL("lookup"), msg);
+      : (Method)send(vt, CZ_SYMBOL("__lookup__"), msg);
 	return m;
 }
 
@@ -121,7 +121,7 @@ Symbol_hash(CzState *cz, Object *self)
 Object *
 Symbol_equals(CzState *cz, Object *self, Object *other)
 {
-	return = (self == other) ? CZ_TRUE : CZ_FALSE;
+	return (self == other) ? CZ_TRUE : CZ_FALSE;
 }
 
 /*
@@ -156,8 +156,8 @@ bootstrap(CzState *cz)
 	CZ_VTABLE(CZ_TQUOTATION) = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
 	CZ_VTABLE(CZ_TLIST)      = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
 
-	VTable_addMethod(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("lookup"),    (Method)VTable_lookup);
-	VTable_addMethod(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("addMethod"), (Method)VTable_addMethod);
+	VTable_addMethod(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("__lookup__"), (Method)VTable_lookup);
+	VTable_addMethod(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("addMethod"),  (Method)VTable_addMethod);
 
 	send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("addMethod"), CZ_SYMBOL("allocate"),  VTable_allocate);
 	send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("addMethod"), CZ_SYMBOL("delegated"), VTable_delegated);
@@ -172,3 +172,4 @@ bootstrap(CzState *cz)
 	
 	return CZ_OK;
 }
+
