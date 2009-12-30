@@ -10,4 +10,7 @@ Number_hash(CzState *, Object *);
 Object *
 Number_equals(CzState *, Object *, Object *);
 
+void
+cz_bootstrap_number(CzState *);
+
 #endif

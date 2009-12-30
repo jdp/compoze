@@ -44,3 +44,15 @@ Number_equals(CzState *cz, Object *self, Object *other)
 	return CZ_TRUE;
 }
 
+/*
+ * Bootstraps the Number kind
+ */
+void
+cz_bootstrap_number(CzState *cz)
+{
+	CZ_VTABLE(CZ_TNUMBER) = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
+	/* send(CZ_VTABLE(CZ_TNUMBER), CZ_SYMBOL("addMethod"), CZ_SYMBOL("new"), Number_new); */
+	send(CZ_VTABLE(CZ_TNUMBER), CZ_SYMBOL("addMethod"), CZ_SYMBOL("hash"), Number_hash);
+	send(CZ_VTABLE(CZ_TNUMBER), CZ_SYMBOL("addMethod"), CZ_SYMBOL("equals"), Number_equals);
+}
+

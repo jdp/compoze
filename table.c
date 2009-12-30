@@ -24,7 +24,7 @@ Pair_new(CzState *cz, Object *hash, Object *key, Object *value)
 {
 	Pair *self     = (Pair *)VTable_allocate(cz, CZ_VTABLE(CZ_TPAIR), sizeof(Pair));
 	self->_vt[-1]  = CZ_VTABLE(CZ_TPAIR);
-	self->key_hash = hash;
+	self->key_hash = (size_t)hash;
 	self->key      = key;
 	self->value    = value;
 	return (Object *)self;
@@ -143,15 +143,10 @@ Table_lookup(CzState *cz, Object *self, Object *key)
 	Object *hash;
 	Pair *pair;
 
-	printf("doing a Table_lookup\n");
 	t = (Table *)self;
-	printf("attempting a send!\n");
 	hash = send(key, CZ_SYMBOL("hash"));
-	printf("sent hash to the key\n");
 	pair = (Pair *)t->items[(size_t)hash % t->cap];
-	printf("did some calculations in Table_lookup\n");
 	while (!CZ_IS_NIL(pair)) {
-		printf("still ain't nil...\n");
 		if (send(pair->key, CZ_SYMBOL("equals"), key) == CZ_TRUE) {
 			return pair->value;
 		}
@@ -160,4 +155,16 @@ Table_lookup(CzState *cz, Object *self, Object *key)
 	return CZ_NIL;
 }
 
-
+/*
+ * Bootstraps the Table and Pair kinds
+ */
+void
+cz_bootstrap_table(CzState *cz)
+{
+	CZ_VTABLE(CZ_TPAIR)  = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
+	send(CZ_VTABLE(CZ_TPAIR), CZ_SYMBOL("addMethod"), CZ_SYMBOL("new"), Pair_new);
+	CZ_VTABLE(CZ_TTABLE) = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
+	send(CZ_VTABLE(CZ_TTABLE), CZ_SYMBOL("addMethod"), CZ_SYMBOL("insert"), Table_insert);
+	send(CZ_VTABLE(CZ_TTABLE), CZ_SYMBOL("addMethod"), CZ_SYMBOL("lookup"), Table_lookup);
+}
+	

@@ -25,4 +25,7 @@ Table_lookup_raw(CzState *, Object *, size_t, Object *);
 Object *
 Table_lookup(CzState *, Object *, Object *);
 
+void
+cz_bootstrap_table(CzState *);
+
 #endif

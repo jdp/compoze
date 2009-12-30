@@ -21,6 +21,7 @@
 #include "hash.h"
 #include "table.h"
 #include "object.h"
+#include "number.h"
 
 inline void *
 alloc(size_t size)
@@ -30,17 +31,13 @@ alloc(size_t size)
 }
 
 VTable *
-VTable_delegated(CzState *cz, VTable *self)
+VTable_delegated(CzState *cz, VTable *parent)
 {
 	VTable *child  = (VTable *)alloc(sizeof(VTable));
-	child->_vt[-1] = self ? self->_vt[-1] : 0;
-	child->hash    = (size_t)(self ? self->_vt[-1] : 0);
+	child->_vt[-1] = parent ? parent->_vt[-1] : 0;
+	child->hash    = (size_t)(parent ? parent->_vt[-1] : 0);
 	child->table   = (Table *)Table_new(cz);
-	child->size    = 2;
-	child->tally   = 0;
-	child->keys    = (Object **)calloc(child->size, sizeof(Object *));
-	child->values  = (Object **)calloc(child->size, sizeof(Object *));
-	child->parent  = self;
+	child->parent  = parent;
 	return child;
 }
 
@@ -155,11 +152,8 @@ bootstrap(CzState *cz)
 	CZ_VTABLE(CZ_TOBJECT)->parent  = CZ_VTABLE(CZ_TOBJECT);
 
 	CZ_VTABLE(CZ_TSYMBOL)    = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
-	CZ_VTABLE(CZ_TNUMBER)    = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
 	CZ_VTABLE(CZ_TQUOTATION) = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
 	CZ_VTABLE(CZ_TLIST)      = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
-	CZ_VTABLE(CZ_TPAIR)      = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
-	CZ_VTABLE(CZ_TTABLE)     = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
 
 	VTable_addMethod(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("lookup"),    (Method)VTable_lookup);
 	VTable_addMethod(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("addMethod"), (Method)VTable_addMethod);
@@ -169,6 +163,9 @@ bootstrap(CzState *cz)
 	
 	send(CZ_VTABLE(CZ_TSYMBOL), CZ_SYMBOL("addMethod"), CZ_SYMBOL("hash"), Symbol_hash);
 	send(CZ_VTABLE(CZ_TSYMBOL), CZ_SYMBOL("addMethod"), CZ_SYMBOL("equals"), Symbol_equals);
+	
+	cz_bootstrap_number(cz);
+	cz_bootstrap_table(cz);
 	
 	printf("straps booted.\n");
 	

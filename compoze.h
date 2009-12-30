@@ -35,13 +35,13 @@ typedef enum
  *   each value has bit #2 set (0b110 and 0b010). That makes it easy to check
  *   if a primitive value is boolean.
  */
-#define CZ_NIL   ((Object *)0)
-#define CZ_ZERO  ((Object *)1)
-#define CZ_TRUE  ((Object *)2)
-#define CZ_FALSE ((Object *)6)
-
-#define CZ_IS_NIL(o)  ((Object *)(o) == CZ_NIL)
-#define CZ_IS_BOOL(o) ((unsigned int)(o) & 2)
+#define CZ_NIL             ((Object *)0)
+#define CZ_ZERO            ((Object *)1)
+#define CZ_TRUE            ((Object *)2)
+#define CZ_FALSE           ((Object *)6)
+#define CZ_IS_PRIMITIVE(o) ((Object *)(o) < (Object *)7)
+#define CZ_IS_NIL(o)       ((Object *)(o) == CZ_NIL)
+#define CZ_IS_BOOL(o)      ((unsigned int)(o) & 2)
 
 #define CZ_VTYPE(x)     (((struct Object *)(x))->vt)
 #define CZ_VTYPE_ID(t)  ((t)-CZ_TNIL)
@@ -55,12 +55,7 @@ typedef enum
 typedef struct cz_vtable
 {
 	CZ_OBJECT_HEADER
-	int                type;
-	int                size;
-	int                tally;
 	struct cz_table   *table;
-	struct cz_object **keys;
-	struct cz_object **values;
 	struct cz_vtable  *parent;
 } VTable;
 
@@ -96,7 +91,7 @@ typedef struct cz_list
 typedef struct cz_pair
 {
 	CZ_OBJECT_HEADER
-	struct cz_object *key_hash;
+	size_t            key_hash;
 	struct cz_object *key;
 	struct cz_object *value;
 	struct cz_pair   *prev;
