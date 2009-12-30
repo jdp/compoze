@@ -2,6 +2,7 @@ SRC = bufio.c \
       lexer.c \
       parser.c \
       object.c \
+      stack.c \
       number.c \
       list.c \
       table.c \

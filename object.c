@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "compoze.h"
+#include "stack.h"
 #include "hash.h"
 #include "table.h"
 #include "object.h"
@@ -120,7 +121,7 @@ Symbol_hash(CzState *cz, Object *self)
 Object *
 Symbol_equals(CzState *cz, Object *self, Object *other)
 {
-	return (self == other) ? CZ_TRUE : CZ_FALSE;
+	return = (self == other) ? CZ_TRUE : CZ_FALSE;
 }
 
 /*

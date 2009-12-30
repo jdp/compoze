@@ -5,10 +5,10 @@
 #include <readline/history.h>
 #include "compoze.h"
 #include "object.h"
+#include "stack.h"
 #include "bufio.h"
 #include "lexer.h"
 #include "parser.h"
-#include "list.h"
 
 void
 repl(void)

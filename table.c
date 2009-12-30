@@ -128,6 +128,7 @@ Table_lookup_raw(CzState *cz, Object *self, size_t hash, Object *key)
 		if (key == pair->key) {
 			return pair->value;
 		}
+		pair = pair->next;
 	}
 	
 	return CZ_NIL;

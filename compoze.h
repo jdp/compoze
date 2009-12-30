@@ -9,8 +9,8 @@ struct cz_symbol;
 struct cz_table;
 struct cz_state;
 
-typedef struct cz_object *(*cz_method)(struct cz_state *, struct cz_object *, ...);
-typedef cz_method Method;
+typedef struct cz_object *(*cz_methodfn)(struct cz_state *, struct cz_object *, ...);
+typedef cz_methodfn Method;
 
 typedef enum
 {
@@ -124,12 +124,29 @@ typedef struct cz_quotation
 	m(cz, r, ##ARGS);                                \
 })
 
+#define senddrop(RCV, MSG, ARGS...) ({               \
+	struct cz_object *r = (struct cz_object *)(RCV); \
+	cz_method         m = bind(cz, r, (MSG));        \
+	struct cz_object *o = m(cz, r, ##ARGS);          \
+	Stack_pop(cz->stack);                            \
+	o;                                               \
+})
+
+typedef struct cz_stack
+{
+	int      top;
+	int      size;
+	Object **items;
+} Stack;
+
+#define CZ_PUSH(o) (Stack_push(cz->stack, (Object *)(o))
+
 typedef struct cz_state
 {
 	CZ_OBJECT_HEADER
 	VTable *vtables[CZ_TUSER];
 	Table  *symbols;
-	List   *stack;
+	Stack  *stack;
 } CzState;
 
 #endif /* COMPOZE_H */

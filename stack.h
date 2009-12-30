@@ -1,13 +1,6 @@
 #ifndef STACK_H
 #define STACK_H
 
-typedef struct stack
-{
-	int      top;
-	int      size;
-	Object **items;
-} Stack;
-
 #define Stack_peek(s)  (s->items[s->top])
 #define Stack_empty(s) (s->top == 0)
 
