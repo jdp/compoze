@@ -7,7 +7,7 @@
 #include "lexer.h"
 
 /*
- * Creates a new parser from a buffered I/O stream.
+ * Creates a new lexer from a buffered I/O stream.
  */
 Lexer *
 Lexer_new(cz_bufio *in)
@@ -51,7 +51,7 @@ Lexer_destroy(Lexer *l)
  * Resets the token buffer to an empty state for the next token
  * to be constructed.
  */
-#define reset(p) (l->bufused = 0)
+#define reset(l) (l->bufused = 0)
 
 /*
  * Saves a piece of the token currently being built by the lexer.
@@ -126,6 +126,7 @@ scan_word(Lexer *l)
 
 /*
  * Places a token in the current lexer state.
+ * Returns an integer T_* constant.
  */
 int
 Lexer_scan(Lexer *l)

@@ -42,7 +42,6 @@ repl(void)
 int
 main(int argc, char *argv[])
 {
-	printf("%p %p\n", djb2_hash("abc"), djb2_hash("bcd"));
 	repl();
 	return 0;
 }

@@ -43,4 +43,10 @@ bind(CzState *, Object *, Object *);
 Object *
 Symbol_new(CzState *, char *);
 
+Object *
+Symbol_hash(CzState *, Object *);
+
+Object *
+Symbol_equals(CzState *, Object *, Object *);
+
 #endif /* OBJECT_H */

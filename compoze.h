@@ -6,6 +6,7 @@ enum { CZ_ERR, CZ_OK };
 struct cz_vtable;
 struct cz_object;
 struct cz_symbol;
+struct cz_table;
 struct cz_state;
 
 typedef struct cz_object *(*cz_method)(struct cz_state *, struct cz_object *, ...);
@@ -39,17 +40,17 @@ typedef enum
 #define CZ_TRUE  ((Object *)2)
 #define CZ_FALSE ((Object *)6)
 
-#define CZ_IS_NIL(o)  ((Object *)o == CZ_NIL)
-#define CZ_IS_BOOL(o) ((unsigned int)o & 2)
+#define CZ_IS_NIL(o)  ((Object *)(o) == CZ_NIL)
+#define CZ_IS_BOOL(o) ((unsigned int)(o) & 2)
 
 #define CZ_VTYPE(x)     (((struct Object *)(x))->vt)
-#define CZ_TYPE_ID(t)   ((t)-CZ_TNIL)
-#define CZ_VTABLE(t)    (CZ_FLEX_AT(cz->vts, PN_TYPE_ID(t)))
+#define CZ_VTYPE_ID(t)  ((t)-CZ_TNIL)
+#define CZ_VTABLE(t)    (cz->vtables[CZ_VTYPE_ID(t)])
 
 #define CZ_OBJECT_HEADER      \
 	struct cz_vtable *_vt[0]; \
 	int               refct;  \
-	struct cz_object *hash;
+	size_t            hash;
 
 typedef struct cz_vtable
 {
@@ -57,6 +58,7 @@ typedef struct cz_vtable
 	int                type;
 	int                size;
 	int                tally;
+	struct cz_table   *table;
 	struct cz_object **keys;
 	struct cz_object **values;
 	struct cz_vtable  *parent;
@@ -86,31 +88,35 @@ typedef struct cz_number
 typedef struct cz_list
 {
 	CZ_OBJECT_HEADER
-	unsigned int       size;
-	unsigned int       cap;
+	size_t       size;
+	size_t       cap;
 	struct cz_object **items;
 } List;
 
 typedef struct cz_pair
 {
 	CZ_OBJECT_HEADER
+	struct cz_object *key_hash;
 	struct cz_object *key;
 	struct cz_object *value;
+	struct cz_pair   *prev;
+	struct cz_pair   *next;
 } Pair;
 
 typedef struct cz_table
 {
 	CZ_OBJECT_HEADER
-	unsigned int     size;
-	unsigned int     cap;
-	struct cz_pair **entries;
+	int        prime;
+	size_t     size;
+	size_t     cap;
+	struct cz_object **items;
 } Table;
 
 typedef struct cz_quotation
 {
 	CZ_OBJECT_HEADER;
-	unsigned int       size;
-	unsigned int       cap;
+	size_t       size;
+	size_t       cap;
 	struct cz_object **items;
 } Quotation;
 
@@ -123,29 +129,11 @@ typedef struct cz_quotation
 	m(cz, r, ##ARGS);                                \
 })
 
-#define djb2_hash(s) ({ \
-	unsigned char *_s = (unsigned char *)s; \
-	int hash = 5381; \
-	int c; \
-	while ((c = *_s++)) { \
-		hash = ((hash << 5) + hash) + c; \
-	} \
-	(struct cz_object *)hash; \
-})
-
 typedef struct cz_state
 {
 	CZ_OBJECT_HEADER
-	VTable *vtable_vt,
-	       *object_vt,
-	       *symbol_vt,
-	       *number_vt,
-	       *string_vt,
-	       *list_vt,
-	       *pair_vt,
-	       *table_vt,
-	       *quotation_vt;
-	VTable *symbols;
+	VTable *vtables[CZ_TUSER];
+	Table  *symbols;
 	List   *stack;
 } CzState;
 
