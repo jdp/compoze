@@ -32,7 +32,7 @@ VTable *
 VTable_delegated(CzState *cz, VTable *self)
 {
 	VTable *child  = (VTable *)malloc(sizeof(VTable));
-	child->vt = self ? self->vt : 0;
+	child->vt      = self ? self->vt : 0;
 	child->hash    = (size_t)(self ? self->vt : 0);
 	child->table   = (Table *)Table_new(cz);
 	child->parent  = self;
@@ -140,17 +140,19 @@ bootstrap(CzState *cz)
 {
 	printf("booting straps...\n");
 	
+	cz->stack = Stack_new(10);
+	
 	cz->symbols = (Table *)Table_new(cz);
 	
-	CZ_VTABLE(CZ_TVTABLE)          = VTable_delegated(cz, 0);
+	CZ_VTABLE(CZ_TVTABLE)     = VTable_delegated(cz, 0);
 	CZ_VTABLE(CZ_TVTABLE)->vt = CZ_VTABLE(CZ_TVTABLE);
 
-	CZ_VTABLE(CZ_TOBJECT)          = VTable_delegated(cz, 0);
-	CZ_VTABLE(CZ_TOBJECT)->vt = CZ_VTABLE(CZ_TVTABLE);
-	CZ_VTABLE(CZ_TOBJECT)->parent  = CZ_VTABLE(CZ_TOBJECT);
+	CZ_VTABLE(CZ_TOBJECT)         = VTable_delegated(cz, 0);
+	CZ_VTABLE(CZ_TOBJECT)->vt     = CZ_VTABLE(CZ_TVTABLE);
+	CZ_VTABLE(CZ_TOBJECT)->parent = CZ_VTABLE(CZ_TOBJECT);
 
 	CZ_VTABLE(CZ_TSYMBOL)    = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
-	CZ_VTABLE(CZ_TWORD)      = VTable_delegated(cz, CZ_VTABLE(CZ_TWORD));
+	CZ_VTABLE(CZ_TWORD)      = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
 	CZ_VTABLE(CZ_TQUOTATION) = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
 	CZ_VTABLE(CZ_TLIST)      = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
 

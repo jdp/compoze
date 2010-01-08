@@ -19,6 +19,9 @@ Stack_reset(Stack *);
 int
 Stack_push(Stack *, Object *);
 
+int
+Stack_push_bulk(Stack *, ...);
+
 Object *
 Stack_pop(Stack *);
 

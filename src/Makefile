@@ -4,10 +4,8 @@ SRC = bufio.c \
       object.c \
       stack.c \
       number.c \
-      list.c \
       table.c \
       quotation.c \
-      hash.c \
       main.c
 OBJ = ${SRC:.c=.o}
 LIB = -lreadline

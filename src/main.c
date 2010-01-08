@@ -33,6 +33,7 @@ repl(void)
 		par = Parser_new();
 		cz_tree(cz, (Quotation *)Parser_parse(par, cz, lex), 0);
 		printf("\n");
+		add_history(line);
 		czB_destroy(buf);
 		Lexer_destroy(lex);
 	}

@@ -4,6 +4,7 @@
  
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include "compoze.h"
 #include "object.h"
 #include "stack.h"
@@ -69,7 +70,7 @@ Stack_reset(Stack *s)
  */
 
 /*
- * Pushes a node to the stack. The stack is automatically grown when
+ * Pushes an object to the stack. The stack is automatically grown when
  *   necessary.
  */
 int
@@ -86,7 +87,25 @@ Stack_push(Stack *s, Object *obj)
 }
 
 /*
- * Pops a node from the stack.
+ * Pushes a variable number of objects to the stack, deferring the actual
+ * work to Stack_push() so it can take advantage of automatic stack growing.
+ */
+int
+Stack_push_bulk(Stack *s, ...)
+{
+	va_list objs;
+	va_start(objs, s);
+	while (s) {
+		if (Stack_push(s, va_arg(objs, Object *)) == CZ_ERR) {
+			return CZ_ERR;
+		}
+	}
+	va_end(objs);
+	return CZ_OK;
+}	
+
+/*
+ * Pops an object from the stack.
  */
 Object *
 Stack_pop(Stack *s)

@@ -9,9 +9,10 @@ Object *
 Quotation_new(CzState *cz)
 {
 	Quotation *self = (Quotation *)send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("allocate"), sizeof(Quotation));
-	self->vt   = CZ_VTABLE(CZ_TQUOTATION);
-	self->size = 0;
-	self->cap  = 0;
+	self->vt    = CZ_VTABLE(CZ_TQUOTATION);
+	self->size  = 0;
+	self->cap   = 0;
+	self->items = NULL;
 	return (Object *)self;
 }
 

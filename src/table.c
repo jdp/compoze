@@ -19,6 +19,18 @@ static const unsigned int primes[] = {
 	805306457, 1610612741
 };
 
+unsigned int
+djb2_hash(void *key, size_t len)
+{
+	unsigned char *str = key;
+	unsigned int hash = 5381;
+	size_t i;
+	for (i = 0; i < len; i++, str++) {
+		hash = ((hash << 5) + hash) + (*str);
+	}
+	return hash;
+}
+
 Object *
 Pair_new(CzState *cz, Object *hash, Object *key, Object *value)
 {

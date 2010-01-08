@@ -7,6 +7,7 @@
 #include "object.h"
 #include "lexer.h"
 #include "parser.h"
+#include "stack.h"
 #include "number.h"
 #include "quotation.h"
 
@@ -49,15 +50,12 @@ Parser_destroy(Parser *p)
 Object *
 Parser_parse(Parser *p, CzState *cz, Lexer *l)
 {
-	Object *q, *o;
+	Object *q1, *q2, *o;
 	int in_def = 0;
-	int token;
-	
-	/* the first entry on the quote frame is the quote that gets
-	   returned by this function */
-	q = Quotation_new(cz);
-	p->frame[p->frameptr] = q;
-	p->active = p->frame[p->frameptr];
+	int token, qdepth = 0;
+	   
+	q1 = Quotation_new(cz);
+	Stack_push(cz->stack, q1);
 	
 	while ((token = Lexer_scan(l)) != T_EOF) {
 		switch (token) {
@@ -67,46 +65,36 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 				p->lineno++;
 				break;
 				
-			/* Begin word definition */
-			case T_BDEF:
-				if (in_def) {
-					printf("can't define within a definition");
-					return CZ_NIL;
-				}
-				in_def = 1;
-				break;
-			
-			/* End word definition */
-			case T_EDEF:
-				in_def = 0;
-				break;
-				
 			/* Begin quoted code */
 			case T_BQUOTE:
-				p->frame[++p->frameptr] = Quotation_new(cz);
-				Quotation_append(cz, p->active, p->frame[p->frameptr]);
-				p->active = p->frame[p->frameptr];
+				qdepth++;
+				q1 = Quotation_new(cz);
+				Stack_push(cz->stack, q1);
 				break;
 				
 			/* End quoted code */
 			case T_EQUOTE:
-				if (p->frameptr <= 0) {
-					printf("not inside a quotation!\n");
-					return CZ_NIL;
-				}
-				p->active = p->frame[--p->frameptr];
+				qdepth--;
+				q1 = Stack_pop(cz->stack);
+				q2 = Stack_pop(cz->stack);
+				Quotation_append(cz, q2, q1);
+				Stack_push(cz->stack, q2);
 				break;
 				
 			/* Add a word to the quotation, as a symbol */
 			case T_WORD:
 				o = Symbol_new(cz, l->buffer);
-				Quotation_append(cz, p->active, o);
+				q1 = Stack_pop(cz->stack);
+				Quotation_append(cz, q1, o);
+				Stack_push(cz->stack, q1);
 				break;
 				
 			/* Add a number to the quotation */
 			case T_NUMBER:
 				o = Number_new(cz, atoi(l->buffer));
-				Quotation_append(cz, p->active, o);
+				q1 = Stack_pop(cz->stack);
+				Quotation_append(cz, q1, o);
+				Stack_push(cz->stack, q1);
 				break;
 				
 			/* facepalm */
@@ -116,7 +104,7 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 		}
 	}
 	
-	return q;
+	return Stack_peek(cz->stack);
 }
 
 /*
