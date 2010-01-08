@@ -23,7 +23,7 @@ Object *
 Pair_new(CzState *cz, Object *hash, Object *key, Object *value)
 {
 	Pair *self     = (Pair *)VTable_allocate(cz, CZ_VTABLE(CZ_TPAIR), sizeof(Pair));
-	self->_vt[-1]  = CZ_VTABLE(CZ_TPAIR);
+	self->vt  = CZ_VTABLE(CZ_TPAIR);
 	self->key_hash = (size_t)hash;
 	self->key      = key;
 	self->value    = value;
@@ -34,7 +34,7 @@ Object *
 Table_new(CzState *cz)
 {
 	Table *self   = (Table *)VTable_allocate(cz, CZ_VTABLE(CZ_TTABLE), sizeof(Table));
-	self->_vt[-1] = CZ_VTABLE(CZ_TTABLE);
+	self->vt = CZ_VTABLE(CZ_TTABLE);
 	self->prime   = 0;
 	self->size    = 0;
 	self->cap     = primes[0];

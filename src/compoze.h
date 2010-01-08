@@ -19,6 +19,7 @@ typedef enum
 	CZ_TVTABLE,
 	CZ_TOBJECT,
 	CZ_TSYMBOL,
+	CZ_TWORD,
 	CZ_TNUMBER,
 	CZ_TSTRING,
 	CZ_TLIST,
@@ -47,9 +48,9 @@ typedef enum
 #define CZ_VTYPE_ID(t)  ((t)-CZ_TNIL)
 #define CZ_VTABLE(t)    (cz->vtables[CZ_VTYPE_ID(t)])
 
-#define CZ_OBJECT_HEADER      \
-	struct cz_vtable *_vt[0]; \
-	int               refct;  \
+#define CZ_OBJECT_HEADER     \
+	struct cz_vtable *vt;    \
+	int               refct; \
 	size_t            hash;
 
 typedef struct cz_vtable

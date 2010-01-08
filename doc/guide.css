@@ -1,0 +1,11 @@
+body {
+	font-family: "Helvetica", "Helvetica Neue", "Arial", sans-serif;
+	width: 50%;
+	margin: auto;
+}
+
+pre {
+	background-color: #333333;
+	color: #eeeeee;
+	padding: 1em 1em 0 1em;
+}

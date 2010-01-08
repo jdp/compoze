@@ -13,7 +13,7 @@ Object *
 Number_new(CzState *cz, int val)
 {
 	Number *self  = (Number *)send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("allocate"), sizeof(Number));
-	self->_vt[-1] = CZ_VTABLE(CZ_TNUMBER);
+	self->vt = CZ_VTABLE(CZ_TNUMBER);
 	self->ival    = val;
 	self->hash    = val;
 	return (Object *)self;
@@ -35,7 +35,7 @@ Number_hash(CzState *cz, Object *self)
 Object *
 Number_equals(CzState *cz, Object *self, Object *other)
 {
-	if (self->_vt[-1] != other->_vt[-1]) {
+	if (self->vt != other->vt) {
 		return CZ_FALSE;
 	}
 	if (((Number *)self)->ival != ((Number *)other)->ival) {

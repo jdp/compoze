@@ -9,7 +9,7 @@ Object *
 List_new(CzState *cz)
 {
 	List *self = (List *)send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("allocate"), sizeof(List));
-	self->_vt[-1]   = CZ_VTABLE(CZ_TLIST);
+	self->vt        = CZ_VTABLE(CZ_TLIST);
 	self->size      = 0;
 	self->cap       = 0;
 	return (Object *)self;

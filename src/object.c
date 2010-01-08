@@ -24,29 +24,26 @@
 #include "object.h"
 #include "number.h"
 
-inline void *
-alloc(size_t size)
-{
-	VTable **ppvt= (VTable **)calloc(1, sizeof(VTable *) + size);
-	return (void *)(ppvt + 1);
-}
-
+/*
+ * Given a parent VTable, the function returns a new VTable inheriting
+ * from the provided parent VTable.
+ */
 VTable *
-VTable_delegated(CzState *cz, VTable *parent)
+VTable_delegated(CzState *cz, VTable *self)
 {
-	VTable *child  = (VTable *)alloc(sizeof(VTable));
-	child->_vt[-1] = parent ? parent->_vt[-1] : 0;
-	child->hash    = (size_t)(parent ? parent->_vt[-1] : 0);
+	VTable *child  = (VTable *)malloc(sizeof(VTable));
+	child->vt = self ? self->vt : 0;
+	child->hash    = (size_t)(self ? self->vt : 0);
 	child->table   = (Table *)Table_new(cz);
-	child->parent  = parent;
+	child->parent  = self;
 	return child;
 }
 
 Object *
 VTable_allocate(CzState *cz, VTable *self, int payloadSize)
 {
-	Object *object = (Object *)alloc(payloadSize);
-	object->_vt[-1] = self;
+	Object *object = (Object *)malloc(payloadSize);
+	object->vt = self;
 	return object;
 }
 
@@ -81,7 +78,7 @@ Method
 bind(CzState *cz, Object *rcv, Object *msg)
 {
 	Method m;
-	VTable *vt = rcv->_vt[-1];
+	VTable *vt = rcv->vt;
 	
 	m = ((msg == CZ_SYMBOL("__lookup__")) && (rcv == (Object *)CZ_VTABLE(CZ_TVTABLE)))
       ? (Method)VTable_lookup(0, vt, msg)
@@ -104,8 +101,8 @@ Symbol_new(CzState *cz, char *string)
 		}
 		pair = (Pair *)pair->next;
 	}
-	symbol = alloc(sizeof(Symbol));
-	symbol->_vt[-1] = CZ_VTABLE(CZ_TSYMBOL);
+	symbol = (Object *)malloc(sizeof(Symbol));
+	symbol->vt = CZ_VTABLE(CZ_TSYMBOL);
 	symbol->hash = hash;
 	((Symbol *)symbol)->string = strdup(string);
 	Table_insert_raw(cz, (Object *)cz->symbols, hash, string, symbol);
@@ -134,7 +131,7 @@ cz_type(Object *obj)
 	if (CZ_IS_BOOL(obj)) {
 		return CZ_TBOOLEAN;
 	}
-	return obj->_vt[-1];
+	return obj->vt;
 }
 */
 
@@ -146,13 +143,14 @@ bootstrap(CzState *cz)
 	cz->symbols = (Table *)Table_new(cz);
 	
 	CZ_VTABLE(CZ_TVTABLE)          = VTable_delegated(cz, 0);
-	CZ_VTABLE(CZ_TVTABLE)->_vt[-1] = CZ_VTABLE(CZ_TVTABLE);
+	CZ_VTABLE(CZ_TVTABLE)->vt = CZ_VTABLE(CZ_TVTABLE);
 
 	CZ_VTABLE(CZ_TOBJECT)          = VTable_delegated(cz, 0);
-	CZ_VTABLE(CZ_TOBJECT)->_vt[-1] = CZ_VTABLE(CZ_TVTABLE);
+	CZ_VTABLE(CZ_TOBJECT)->vt = CZ_VTABLE(CZ_TVTABLE);
 	CZ_VTABLE(CZ_TOBJECT)->parent  = CZ_VTABLE(CZ_TOBJECT);
 
 	CZ_VTABLE(CZ_TSYMBOL)    = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
+	CZ_VTABLE(CZ_TWORD)      = VTable_delegated(cz, CZ_VTABLE(CZ_TWORD));
 	CZ_VTABLE(CZ_TQUOTATION) = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
 	CZ_VTABLE(CZ_TLIST)      = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
 

@@ -24,7 +24,7 @@ Lexer_new(cz_bufio *in)
 		return NULL;
 	}
 	memset(l->buffer, 0, l->bufsize);
-	l->current = -2;
+	l->current = T_INIT;
 	return l;
 }
 
@@ -131,7 +131,7 @@ scan_word(Lexer *l)
 int
 Lexer_scan(Lexer *l)
 {
-	if (l->current == -2) {
+	if (l->current == T_INIT) {
 		next(l);
 	}
 	for (;;) {
@@ -180,7 +180,6 @@ Lexer_scan(Lexer *l)
 					scan_word(l);
 					return T_WORD;
 				}
-				break;
 		}
 	}
 }

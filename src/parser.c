@@ -127,7 +127,7 @@ cz_tree(CzState *cz, Quotation *q, int depth)
 {
 	int i;
 	for (i = 0; i < q->size; i++) {
-		if (q->items[i]->_vt[-1] == CZ_VTABLE(CZ_TQUOTATION)) {
+		if (q->items[i]->vt == CZ_VTABLE(CZ_TQUOTATION)) {
 			printf("[ ");
 			cz_tree(cz, (Quotation *)q->items[i], depth+1);
 			printf("] ");

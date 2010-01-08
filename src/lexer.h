@@ -6,6 +6,8 @@
 
 enum
 {
+	T_INIT = -2,
+	T_EOF,
 	T_NUMBER,
 	T_STRING,
 	T_WORD,
@@ -13,8 +15,7 @@ enum
 	T_EQUOTE,
 	T_BDEF,
 	T_EDEF,
-	T_EOL,
-	T_EOF
+	T_EOL
 };
 
 typedef struct cz_lexer

@@ -1,9 +1,9 @@
-% More words!
+% Interpreter.
 
-% Splitting of the parser into a lexer and a parser. At first I did not think
-  that it was necessary, but the parser is growing a little too complex for
-  my own taste.
-  
-% Maybe some sort of experimental object system? I like the "everything is an
-  object" idea, that saves the pain of writing a bunch of x_to_y converters
-  for primitives, I can just write >float and >int methods, a la Factor.
+% JIT or virtual machine?
+
+  Unnecessary? An enlightening exercise.
+
+% Garbage collector.
+
+  Valgrind demands satisfaction.
