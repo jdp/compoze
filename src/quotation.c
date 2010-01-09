@@ -19,7 +19,7 @@ Quotation_new(CzState *cz)
 Object *
 Quotation_append(CzState *cz, Object *self, Object *object)
 {
-	Quotation *q = (Quotation *)self;
+	Quotation *q = CZ_QUOTATION(self);
 	if ((q->size + 1) > q->cap) {
 		q->items = (Object **)realloc(q->items, sizeof(Object *) * (q->cap + 1) * 2);
 		q->cap = (q->cap + 1) * 2;
@@ -45,16 +45,14 @@ Quotation_eval(CzState *cz, Quotation *self)
 	}
 	
 	for (i = 0; i < self->size; i++) {
-		/*
 		switch (self->items[i]->vt) {
 			case CZ_VTABLE(CZ_TSYMBOL):
 				send(Stack_pop(cz->stack), self->items[i]);
 				break;
 			default:
-				Stack_push(cz->stack, self->items[i]);
+				CZ_PUSH(self->items[i]);
 				break;
 		}
-		*/
 	}
 	
 	return CZ_NIL;

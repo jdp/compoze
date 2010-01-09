@@ -92,7 +92,6 @@ Symbol_new(CzState *cz, char *string)
 	Object *symbol;
 	Pair *pair;
 	size_t hash;
-
 	hash = djb2_hash(string, strlen(string));
 	pair = (Pair *)cz->symbols->items[hash % cz->symbols->cap];
 	while (!CZ_IS_NIL(pair)) {
@@ -104,6 +103,7 @@ Symbol_new(CzState *cz, char *string)
 	symbol = (Object *)malloc(sizeof(Symbol));
 	symbol->vt = CZ_VTABLE(CZ_TSYMBOL);
 	symbol->hash = hash;
+	symbol->frozen = CZ_FALSE;
 	((Symbol *)symbol)->string = strdup(string);
 	Table_insert_raw(cz, (Object *)cz->symbols, hash, string, symbol);
 	return symbol;

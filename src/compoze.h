@@ -68,7 +68,8 @@ typedef struct cz_object
 typedef struct cz_symbol
 {
 	CZ_OBJECT_HEADER
-	char *string;
+	char             *string;
+	struct cz_object *frozen;
 } Symbol;
 
 typedef struct cz_number
@@ -116,6 +117,8 @@ typedef struct cz_quotation
 	struct cz_object **items;
 } Quotation;
 
+#define CZ_QUOTATION(o) ((struct cz_quotation *)(o))
+
 #define incref(o) (o->refct++)
 #define decref(o) (o->refct--)
 
@@ -128,7 +131,7 @@ typedef struct cz_quotation
 #define apisend(RCV, MSG, ARGS...) ({                \
 	struct cz_object *r = (struct cz_object *)(RCV); \
 	cz_methodfn       m = bind(cz, r, (MSG));        \
-	Stack_push_bulk(cz->stack, ##ARGS);              \
+	Stack_push_bulk(cz->stack, RCV, ##ARGS);         \
 	m(cz, r);                                        \
 })
 
@@ -140,6 +143,7 @@ typedef struct cz_stack
 } Stack;
 
 #define CZ_PUSH(o) (Stack_push(cz->stack, (Object *)(o))
+#define CZ_POP()   (Stack_pop(cz->stack))
 
 typedef struct cz_state
 {
