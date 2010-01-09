@@ -47,7 +47,7 @@ VTable_allocate(CzState *cz, VTable *self, int payloadSize)
 }
 
 Method
-VTable_addMethod(CzState *cz, VTable *self, Object *key, Method method)
+VTable_add_method(CzState *cz, VTable *self, Object *key, Method method)
 {
 	Method m;
 	
@@ -155,14 +155,14 @@ bootstrap(CzState *cz)
 	CZ_VTABLE(CZ_TQUOTATION) = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
 	CZ_VTABLE(CZ_TLIST)      = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
 
-	VTable_addMethod(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("__lookup__"), (Method)VTable_lookup);
-	VTable_addMethod(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("addMethod"),  (Method)VTable_addMethod);
+	VTable_add_method(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("__lookup__"), (Method)VTable_lookup);
+	VTable_add_method(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("add-method"),  (Method)VTable_add_method);
 
-	send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("addMethod"), CZ_SYMBOL("allocate"),  VTable_allocate);
-	send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("addMethod"), CZ_SYMBOL("delegated"), VTable_delegated);
+	send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("add-method"), CZ_SYMBOL("allocate"),  VTable_allocate);
+	send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("add-method"), CZ_SYMBOL("delegated"), VTable_delegated);
 	
-	send(CZ_VTABLE(CZ_TSYMBOL), CZ_SYMBOL("addMethod"), CZ_SYMBOL("hash"), Symbol_hash);
-	send(CZ_VTABLE(CZ_TSYMBOL), CZ_SYMBOL("addMethod"), CZ_SYMBOL("equals"), Symbol_equals);
+	send(CZ_VTABLE(CZ_TSYMBOL), CZ_SYMBOL("add-method"), CZ_SYMBOL("hash"), Symbol_hash);
+	send(CZ_VTABLE(CZ_TSYMBOL), CZ_SYMBOL("add-method"), CZ_SYMBOL("equals"), Symbol_equals);
 	
 	cz_bootstrap_number(cz);
 	cz_bootstrap_table(cz);

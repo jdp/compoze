@@ -35,13 +35,13 @@ Object *
 VTable_allocate(CzState *, VTable *, int);
 
 Method
-VTable_addMethod(CzState *, VTable *, Object *, Method);
+VTable_add_method(CzState *, VTable *, Object *, Method);
 
 Method
 bind(CzState *, Object *, Object *);
 
 Object *
-Symbol_new(CzState *, char *);
+Symbol_intern(CzState *, char *);
 
 Object *
 Symbol_hash(CzState *, Object *);

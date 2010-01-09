@@ -17,7 +17,6 @@
 Parser *
 Parser_new(void)
 {
-	int i;
 	Parser *p = (Parser *)malloc(sizeof(Parser));
 	if (p == NULL) {
 		return NULL;
@@ -74,7 +73,7 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 				
 			/* Add a word to the quotation, as a symbol */
 			case T_WORD:
-				o = Symbol_new(cz, l->buffer);
+				o = Symbol_intern(cz, l->buffer);
 				CZ_PUSH(o);
 				Stack_swap(cz->stack);
 				Quotation_append(cz);
