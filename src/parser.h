@@ -13,10 +13,6 @@ typedef struct cz_parser
 {
 	cz_bufio *in;
 	int       lineno;
-	Object   *root,
-	         *active,
-	         *frame[32];
-	int       frameptr;
 } Parser;
 
 Parser *

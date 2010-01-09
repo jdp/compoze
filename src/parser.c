@@ -23,11 +23,6 @@ Parser_new(void)
 		return NULL;
 	}
 	p->lineno   = 0;
-	p->root     = p->active = CZ_NIL;
-	p->frameptr = 0;
-	for (i = 0; i < 32; i++) {
-		p->frame[i] = CZ_NIL;
-	}
 	return p;
 }
 
