@@ -17,7 +17,7 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#define CZ_SYMBOL(s) (Symbol_new(cz, s))
+#define CZ_SYMBOL(s) (Symbol_intern(cz, s))
 
 int
 bootstrap(CzState *);

@@ -50,12 +50,11 @@ Parser_destroy(Parser *p)
 Object *
 Parser_parse(Parser *p, CzState *cz, Lexer *l)
 {
-	Object *q1, *q2, *o;
-	int in_def = 0;
+	Object *o;
+	//int in_def = 0;
 	int token, qdepth = 0;
 	   
-	q1 = Quotation_new(cz);
-	Stack_push(cz->stack, q1);
+	Quotation_new(cz);
 	
 	while ((token = Lexer_scan(l)) != T_EOF) {
 		switch (token) {
@@ -68,33 +67,30 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 			/* Begin quoted code */
 			case T_BQUOTE:
 				qdepth++;
-				q1 = Quotation_new(cz);
-				Stack_push(cz->stack, q1);
+				Quotation_new(cz);
 				break;
 				
 			/* End quoted code */
 			case T_EQUOTE:
 				qdepth--;
-				q1 = Stack_pop(cz->stack);
-				q2 = Stack_pop(cz->stack);
-				Quotation_append(cz, q2, q1);
-				Stack_push(cz->stack, q2);
+				Stack_swap(cz->stack);
+				Quotation_append(cz);
 				break;
 				
 			/* Add a word to the quotation, as a symbol */
 			case T_WORD:
 				o = Symbol_new(cz, l->buffer);
-				q1 = Stack_pop(cz->stack);
-				Quotation_append(cz, q1, o);
-				Stack_push(cz->stack, q1);
+				CZ_PUSH(o);
+				Stack_swap(cz->stack);
+				Quotation_append(cz);
 				break;
 				
 			/* Add a number to the quotation */
 			case T_NUMBER:
 				o = Number_new(cz, atoi(l->buffer));
-				q1 = Stack_pop(cz->stack);
-				Quotation_append(cz, q1, o);
-				Stack_push(cz->stack, q1);
+				CZ_PUSH(o);
+				Stack_swap(cz->stack);
+				Quotation_append(cz);
 				break;
 				
 			/* facepalm */

@@ -82,7 +82,7 @@ Stack_push(Stack *s, Object *obj)
 			return CZ_ERR;
 		}
 	}
-	s->items[++(s->top)] = obj;
+	s->items[(s->top)++] = obj;
 	return CZ_OK;
 }
 
@@ -113,6 +113,21 @@ Stack_pop(Stack *s)
 	if (s->top <= 0) {
 		return CZ_NIL;
 	}
-	return s->items[(s->top)--];
+	return s->items[--(s->top)];
 }
+
+int
+Stack_swap(Stack *s)
+{
+	Object *o1, *o2;
+	if (s->top < 1) {
+		return CZ_ERR;
+	}
+	o1 = Stack_pop(s);
+	o2 = Stack_pop(s);
+	Stack_push(s, o1);
+	Stack_push(s, o2);
+	return CZ_OK;
+}
+
 	

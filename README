@@ -4,7 +4,7 @@ aims
 
   % simple
   
-    compoze is intented to be as simple as
+    compoze is intended to be as simple as
     possible while still being useful. any words
     that aren't totally necessary probably will
     not be built-ins.
@@ -23,10 +23,6 @@ aims
   
 current status
 
-  % built-in words
-  
-    true, false, eq, call, print, println, call,
-    dup, swap, dip. more on the way!
     
   % quotations
   

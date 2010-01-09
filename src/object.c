@@ -19,7 +19,6 @@
 #include <string.h>
 #include "compoze.h"
 #include "stack.h"
-#include "hash.h"
 #include "table.h"
 #include "object.h"
 #include "number.h"
@@ -87,7 +86,7 @@ bind(CzState *cz, Object *rcv, Object *msg)
 }
 
 Object *
-Symbol_new(CzState *cz, char *string)
+Symbol_intern(CzState *cz, char *string)
 {
 	Object *symbol;
 	Pair *pair;
@@ -103,7 +102,7 @@ Symbol_new(CzState *cz, char *string)
 	symbol = (Object *)malloc(sizeof(Symbol));
 	symbol->vt = CZ_VTABLE(CZ_TSYMBOL);
 	symbol->hash = hash;
-	symbol->frozen = CZ_FALSE;
+	((Symbol *)symbol)->frozen = CZ_FALSE;
 	((Symbol *)symbol)->string = strdup(string);
 	Table_insert_raw(cz, (Object *)cz->symbols, hash, string, symbol);
 	return symbol;

@@ -45,7 +45,7 @@ typedef enum
 #define CZ_IS_BOOL(o)      ((unsigned int)(o) & 2)
 
 #define CZ_VTYPE(x)     (((struct Object *)(x))->vt)
-#define CZ_VTYPE_ID(t)  ((t)-CZ_TNIL)
+#define CZ_VTYPE_ID(t)  ((unsigned int)((t)-CZ_TNIL))
 #define CZ_VTABLE(t)    (cz->vtables[CZ_VTYPE_ID(t)])
 
 #define CZ_OBJECT_HEADER     \
@@ -64,6 +64,8 @@ typedef struct cz_object
 {
 	CZ_OBJECT_HEADER
 } Object;
+
+#define CZ_OBJECT(o) ((struct cz_object *)(o))
 
 typedef struct cz_symbol
 {
@@ -131,7 +133,7 @@ typedef struct cz_quotation
 #define apisend(RCV, MSG, ARGS...) ({                \
 	struct cz_object *r = (struct cz_object *)(RCV); \
 	cz_methodfn       m = bind(cz, r, (MSG));        \
-	Stack_push_bulk(cz->stack, RCV, ##ARGS);         \
+	Stack_push_bulk(cz->stack, ##ARGS, (RCV));       \
 	m(cz, r);                                        \
 })
 
@@ -142,7 +144,7 @@ typedef struct cz_stack
 	Object **items;
 } Stack;
 
-#define CZ_PUSH(o) (Stack_push(cz->stack, (Object *)(o))
+#define CZ_PUSH(o) (Stack_push(cz->stack, (Object *)(o)))
 #define CZ_POP()   (Stack_pop(cz->stack))
 
 typedef struct cz_state
@@ -152,6 +154,8 @@ typedef struct cz_state
 	Table  *symbols;
 	Stack  *stack;
 } CzState;
+
+unsigned int djb2_hash(void *, size_t);
 
 #endif /* COMPOZE_H */
 

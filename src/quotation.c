@@ -5,48 +5,63 @@
 #include "object.h"
 #include "quotation.h"
 
+/*
+ * ( -- Q )
+ * Pushes an empty Quotation object to the stack.
+ */
 Object *
 Quotation_new(CzState *cz)
 {
-	Quotation *self = (Quotation *)send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("allocate"), sizeof(Quotation));
+	Quotation *self = CZ_QUOTATION(send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("allocate"), sizeof(Quotation)));
 	self->vt    = CZ_VTABLE(CZ_TQUOTATION);
 	self->size  = 0;
 	self->cap   = 0;
 	self->items = NULL;
-	return (Object *)self;
+	CZ_PUSH(self);
+	return CZ_OBJECT(self);
 }
 
+/*
+ * ( A Q -- Q )
+ * Expects a quotation object atop the stack, and then any object type
+ * underneath it. The quotation Q is popped, then the object A is popped, A
+ * is appended to Q, and Q is then pushed back onto the stack.
+ */
 Object *
-Quotation_append(CzState *cz, Object *self, Object *object)
+Quotation_append(CzState *cz)
 {
-	Quotation *q = CZ_QUOTATION(self);
+	Quotation *q = CZ_QUOTATION(CZ_POP());
+	Object *object = CZ_POP();
 	if ((q->size + 1) > q->cap) {
 		q->items = (Object **)realloc(q->items, sizeof(Object *) * (q->cap + 1) * 2);
 		q->cap = (q->cap + 1) * 2;
 	}
 	q->items[q->size++] = object;
+	CZ_PUSH(q);
 	return object;
 }
 
 Object *
-Quotation_at(CzState *cz, Quotation *self, int idx)
+Quotation_at(CzState *cz)
 {
+	int idx = 0;
+	Quotation *self = CZ_QUOTATION(CZ_POP());
 	return self->items[idx];
 }
 
 Object *
-Quotation_eval(CzState *cz, Quotation *self)
+Quotation_eval(CzState *cz)
 {
 	int i;
-	Object *obj;
+	Quotation *self = CZ_QUOTATION(CZ_POP());
 	
 	if (self->size == 0) {
 		return CZ_NIL;
 	}
 	
 	for (i = 0; i < self->size; i++) {
-		switch (self->items[i]->vt) {
-			case CZ_VTABLE(CZ_TSYMBOL):
+		switch (CZ_VTYPE_ID(self->items[i]->vt)) {
+			case CZ_TSYMBOL:
 				send(Stack_pop(cz->stack), self->items[i]);
 				break;
 			default:

@@ -1,11 +1,8 @@
 #ifndef STACK_H
 #define STACK_H
 
-#define Stack_peek(s)  (s->items[s->top])
-#define Stack_empty(s) (s->top == 0)
-
-#define PUSHNUMBER(s,n) (Stack_push(s, (Object *)n))
-#define POPNUMBER(s)    ((Number *)Stack_pop(s))
+#define Stack_peek(s)  ((s)->items[(s)->top-1])
+#define Stack_empty(s) ((s)->top == 0)
 
 Stack *
 Stack_new(unsigned int);
@@ -24,5 +21,8 @@ Stack_push_bulk(Stack *, ...);
 
 Object *
 Stack_pop(Stack *);
+
+int
+Stack_swap(Stack *s);
 
 #endif

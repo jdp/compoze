@@ -5,6 +5,6 @@ Object *
 Quotation_new(CzState *);
 
 Object *
-Quotation_append(CzState *, Object *, Object *);
+Quotation_append(CzState *);
 
 #endif
