@@ -3,6 +3,7 @@
 #include <string.h>
 #include "compoze.h"
 #include "object.h"
+#include "stack.h"
 #include "table.h"
 
 /*
@@ -32,21 +33,25 @@ djb2_hash(void *key, size_t len)
 }
 
 Object *
-Pair_new(CzState *cz, Object *hash, Object *key, Object *value)
+Pair_create_(CzState *cz, Object *hash, Object *key, Object *value)
 {
 	Pair *self     = (Pair *)VTable_allocate(cz, CZ_VTABLE(CZ_TPAIR), sizeof(Pair));
-	self->vt  = CZ_VTABLE(CZ_TPAIR);
+	self->vt       = CZ_VTABLE(CZ_TPAIR);
 	self->key_hash = (size_t)hash;
 	self->key      = key;
 	self->value    = value;
 	return (Object *)self;
 }
 
+/*
+ * ( -- T )
+ * Creates a new Table object and puts it on top of the stack.
+ */
 Object *
 Table_new(CzState *cz)
 {
 	Table *self   = (Table *)VTable_allocate(cz, CZ_VTABLE(CZ_TTABLE), sizeof(Table));
-	self->vt = CZ_VTABLE(CZ_TTABLE);
+	self->vt      = CZ_VTABLE(CZ_TTABLE);
 	self->prime   = 0;
 	self->size    = 0;
 	self->cap     = primes[0];
@@ -60,11 +65,11 @@ Table_new(CzState *cz)
  * Also super useful.
  */
 Object *
-Table_insert_raw(CzState *cz, Object *self, size_t hash, void *key, void *value)
+Table_insert_(CzState *cz, Object *self, size_t hash, void *key, void *value)
 {
 	Object *pair;
-	pair = Pair_new(cz, (Object *)hash, (Object *)key, (Object *)value);
-	Table_insert_pair(cz, self, pair);
+	pair = Pair_create_(cz, (Object *)hash, (Object *)key, (Object *)value);
+	Table_insert_pair_(cz, self, pair);
 	return self;
 }
 
@@ -73,14 +78,14 @@ Table_insert_raw(CzState *cz, Object *self, size_t hash, void *key, void *value)
  * Reserved mostly for internal use.
  */
 Object *
-Table_insert_pair(CzState *cz, Object *self, Object *pair)
+Table_insert_pair_(CzState *cz, Object *self, Object *pair)
 {
 	Table *t;
 	size_t i;
 	
 	t = (Table *)self;
 	if ((++(t->size) / t->cap) > 0.7) {
-		Table_resize(cz, self);
+		Table_resize_(cz, self);
 	}
 	i = (size_t)(((Pair *)pair)->key_hash) % t->cap;
 	((Pair *)pair)->next = (Pair *)t->items[i];
@@ -97,8 +102,8 @@ Table_insert(CzState *cz, Object *self, Object *key, Object *value)
 	Object *hash, *pair;
 	
 	hash = send(key, CZ_SYMBOL("hash"));
-	pair = Pair_new(cz, hash, key, value);
-	Table_insert_pair(cz, self, pair);
+	pair = Pair_create_(cz, hash, hash, value);
+	Table_insert_pair_(cz, self, pair);
 	return self;
 }
 
@@ -106,7 +111,7 @@ Table_insert(CzState *cz, Object *self, Object *key, Object *value)
  * Grows a table as needed.
  */
 Object *
-Table_resize(CzState *cz, Object *self)
+Table_resize_(CzState *cz, Object *self)
 {
 	Table *t;
 	Object **new_items;
@@ -131,7 +136,7 @@ Table_resize(CzState *cz, Object *self)
 }
 
 Object *
-Table_lookup_raw(CzState *cz, Object *self, size_t hash, Object *key)
+Table_lookup_(CzState *cz, Object *self, size_t hash, Object *key)
 {
 	Pair *pair;
 	
@@ -175,9 +180,6 @@ void
 cz_bootstrap_table(CzState *cz)
 {
 	CZ_VTABLE(CZ_TPAIR)  = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
-	send(CZ_VTABLE(CZ_TPAIR), CZ_SYMBOL("addMethod"), CZ_SYMBOL("new"), Pair_new);
 	CZ_VTABLE(CZ_TTABLE) = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
-	send(CZ_VTABLE(CZ_TTABLE), CZ_SYMBOL("addMethod"), CZ_SYMBOL("insert"), Table_insert);
-	send(CZ_VTABLE(CZ_TTABLE), CZ_SYMBOL("addMethod"), CZ_SYMBOL("lookup"), Table_lookup);
 }
 	

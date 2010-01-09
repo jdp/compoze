@@ -151,7 +151,7 @@ typedef struct cz_state
 {
 	CZ_OBJECT_HEADER
 	VTable *vtables[CZ_TUSER];
-	Table  *symbols;
+	Table  *symbols, *strings;
 	Stack  *stack;
 } CzState;
 

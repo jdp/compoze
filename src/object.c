@@ -51,10 +51,10 @@ VTable_add_method(CzState *cz, VTable *self, Object *key, Method method)
 {
 	Method m;
 	
-	m = (Method)Table_lookup_raw(cz, (Object *)self->table, ((Symbol *)key)->hash, key);
+	m = (Method)Table_lookup_(cz, (Object *)self->table, ((Symbol *)key)->hash, key);
 	if (CZ_IS_NIL(m)) {
 		m = method;
-		Table_insert_raw(cz, (Object *)self->table, ((Symbol *)key)->hash, key, (Object *)m);
+		Table_insert_(cz, (Object *)self->table, ((Symbol *)key)->hash, key, (Object *)m);
 	}
 	return m;
 }
@@ -64,7 +64,7 @@ VTable_lookup(CzState *cz, VTable *self, Object *key)
 {
 	Object *value;
 	
-	if (!CZ_IS_NIL(value = Table_lookup_raw(cz, (Object *)self->table, ((Symbol *)key)->hash, key))) {
+	if (!CZ_IS_NIL(value = Table_lookup_(cz, (Object *)self->table, ((Symbol *)key)->hash, key))) {
 		return value;
 	}
 	if (self->parent) {
@@ -104,7 +104,7 @@ Symbol_intern(CzState *cz, char *string)
 	symbol->hash = hash;
 	((Symbol *)symbol)->frozen = CZ_FALSE;
 	((Symbol *)symbol)->string = strdup(string);
-	Table_insert_raw(cz, (Object *)cz->symbols, hash, string, symbol);
+	Table_insert_(cz, (Object *)cz->symbols, hash, string, symbol);
 	return symbol;
 }
 
@@ -142,6 +142,7 @@ bootstrap(CzState *cz)
 	cz->stack = Stack_new(10);
 	
 	cz->symbols = (Table *)Table_new(cz);
+	cz->strings = (Table *)Table_new(cz);
 	
 	CZ_VTABLE(CZ_TVTABLE)     = VTable_delegated(cz, 0);
 	CZ_VTABLE(CZ_TVTABLE)->vt = CZ_VTABLE(CZ_TVTABLE);
@@ -156,7 +157,7 @@ bootstrap(CzState *cz)
 	CZ_VTABLE(CZ_TLIST)      = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
 
 	VTable_add_method(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("__lookup__"), (Method)VTable_lookup);
-	VTable_add_method(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("add-method"),  (Method)VTable_add_method);
+	VTable_add_method(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("add-method"), (Method)VTable_add_method);
 
 	send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("add-method"), CZ_SYMBOL("allocate"),  VTable_allocate);
 	send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("add-method"), CZ_SYMBOL("delegated"), VTable_delegated);
@@ -165,6 +166,7 @@ bootstrap(CzState *cz)
 	send(CZ_VTABLE(CZ_TSYMBOL), CZ_SYMBOL("add-method"), CZ_SYMBOL("equals"), Symbol_equals);
 	
 	cz_bootstrap_number(cz);
+	
 	cz_bootstrap_table(cz);
 	
 	printf("straps booted.\n");

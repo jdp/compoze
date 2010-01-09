@@ -52,7 +52,7 @@ cz_bootstrap_number(CzState *cz)
 {
 	CZ_VTABLE(CZ_TNUMBER) = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
 	/* send(CZ_VTABLE(CZ_TNUMBER), CZ_SYMBOL("addMethod"), CZ_SYMBOL("new"), Number_new); */
-	send(CZ_VTABLE(CZ_TNUMBER), CZ_SYMBOL("addMethod"), CZ_SYMBOL("hash"), Number_hash);
-	send(CZ_VTABLE(CZ_TNUMBER), CZ_SYMBOL("addMethod"), CZ_SYMBOL("equals"), Number_equals);
+	send(CZ_VTABLE(CZ_TNUMBER), CZ_SYMBOL("add-method"), CZ_SYMBOL("hash"), Number_hash);
+	send(CZ_VTABLE(CZ_TNUMBER), CZ_SYMBOL("add-method"), CZ_SYMBOL("equals"), Number_equals);
 }
 
