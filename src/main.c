@@ -31,7 +31,8 @@ repl(void)
 		buf = czB_create_from_string(line);
 		lex = Lexer_new(buf);
 		par = Parser_new();
-		cz_tree(cz, (Quotation *)Parser_parse(par, cz, lex), 0);
+		Parser_parse(par, cz, lex);
+		cz_tree(cz, CZ_QUOTATION(CZ_POP()), 0);
 		printf("\n");
 		add_history(line);
 		czB_destroy(buf);

@@ -21,7 +21,7 @@ Parser_new(void)
 	if (p == NULL) {
 		return NULL;
 	}
-	p->lineno   = 0;
+	p->lineno = 0;
 	return p;
 }
 
@@ -40,8 +40,10 @@ Parser_destroy(Parser *p)
 
 /*
  * Builds a quotation from the token stream.
+ * The resulting quotation is left on the Compoze state's stack as
+ * as the top-most item.
  */
-Object *
+int
 Parser_parse(Parser *p, CzState *cz, Lexer *l)
 {
 	Object *o;
@@ -90,11 +92,11 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 			/* facepalm */
 			default:
 				printf("HOW COULD THIS HAVE HAPPENED, #%d?\n", token);
-				return CZ_NIL;
+				return CZ_ERR;
 		}
 	}
 	
-	return Stack_peek(cz->stack);
+	return CZ_OK;
 }
 
 /*
@@ -115,4 +117,4 @@ cz_tree(CzState *cz, Quotation *q, int depth)
 		}
 	}
 }
-	
+

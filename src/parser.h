@@ -21,7 +21,7 @@ Parser_new(void);
 int
 Parser_destroy(Parser *);
 
-Object *
+int
 Parser_parse(Parser *, CzState *, Lexer *);
 
 void
