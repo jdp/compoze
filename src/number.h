@@ -2,13 +2,13 @@
 #define NUMBER_H
 
 Object *
-Number_new(CzState *, int);
+Number_create_(CzState *, int);
 
 Object *
 Number_hash(CzState *, Object *);
 
 Object *
-Number_equals(CzState *, Object *, Object *);
+Number_equals(CzState *, Object *);
 
 void
 cz_bootstrap_number(CzState *);

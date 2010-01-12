@@ -44,9 +44,11 @@ Quotation_append(CzState *cz)
 Object *
 Quotation_at(CzState *cz)
 {
-	int idx = 0;
 	Quotation *self = CZ_QUOTATION(CZ_POP());
-	return self->items[idx];
+	Number *num = CZ_NUMBER(CZ_POP());
+	Object *obj = self->items[num->ival];
+	CZ_PUSH(obj);
+	return obj;
 }
 
 Object *
@@ -62,7 +64,7 @@ Quotation_eval(CzState *cz)
 	for (i = 0; i < self->size; i++) {
 		switch (CZ_VTYPE_ID(self->items[i]->vt)) {
 			case CZ_TSYMBOL:
-				send(Stack_pop(cz->stack), self->items[i]);
+				apisend(Stack_pop(cz->stack), self->items[i]);
 				break;
 			default:
 				CZ_PUSH(self->items[i]);

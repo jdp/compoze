@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "compoze.h"
 #include "object.h"
+#include "stack.h"
 #include "number.h"
 
 /*
@@ -10,12 +11,12 @@
  * TODO: Arbitrary precision, floating point.
  */
 Object *
-Number_new(CzState *cz, int val)
+Number_create_(CzState *cz, int val)
 {
-	Number *self  = (Number *)send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("allocate"), sizeof(Number));
-	self->vt = CZ_VTABLE(CZ_TNUMBER);
-	self->ival    = val;
-	self->hash    = val;
+	Number *self = (Number *)send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("allocate"), sizeof(Number));
+	self->vt     = CZ_VTABLE(CZ_TNUMBER);
+	self->ival   = val;
+	self->hash   = val;
 	return (Object *)self;
 }
 
@@ -33,14 +34,19 @@ Number_hash(CzState *cz, Object *self)
  * Returns whether or not two numbers are equal to each other.
  */
 Object *
-Number_equals(CzState *cz, Object *self, Object *other)
+Number_equals(CzState *cz, Object *self)
 {
+	Object *other;
+	other = CZ_POP();
 	if (self->vt != other->vt) {
+		CZ_PUSH(CZ_FALSE);
 		return CZ_FALSE;
 	}
 	if (((Number *)self)->ival != ((Number *)other)->ival) {
+		CZ_PUSH(CZ_FALSE);
 		return CZ_FALSE;
 	}
+	CZ_PUSH(CZ_TRUE);
 	return CZ_TRUE;
 }
 
@@ -51,7 +57,6 @@ void
 cz_bootstrap_number(CzState *cz)
 {
 	CZ_VTABLE(CZ_TNUMBER) = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
-	/* send(CZ_VTABLE(CZ_TNUMBER), CZ_SYMBOL("addMethod"), CZ_SYMBOL("new"), Number_new); */
 	send(CZ_VTABLE(CZ_TNUMBER), CZ_SYMBOL("add-method"), CZ_SYMBOL("hash"), Number_hash);
 	send(CZ_VTABLE(CZ_TNUMBER), CZ_SYMBOL("add-method"), CZ_SYMBOL("equals"), Number_equals);
 }

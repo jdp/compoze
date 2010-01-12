@@ -83,7 +83,7 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 				
 			/* Add a number to the quotation */
 			case T_NUMBER:
-				o = Number_new(cz, atoi(l->buffer));
+				o = Number_create_(cz, atoi(l->buffer));
 				CZ_PUSH(o);
 				Stack_swap(cz->stack);
 				Quotation_append(cz);

@@ -43,6 +43,7 @@ typedef enum
 #define CZ_IS_PRIMITIVE(o) ((Object *)(o) < (Object *)7)
 #define CZ_IS_NIL(o)       ((Object *)(o) == CZ_NIL)
 #define CZ_IS_BOOL(o)      ((unsigned int)(o) & 2)
+#define CZ_IS_NUMBER(o)    ((o)->vt == cz->vtables[CZ_TNUMBER])
 
 #define CZ_VTYPE(x)     (((struct Object *)(x))->vt)
 #define CZ_VTYPE_ID(t)  ((unsigned int)((t)-CZ_TNIL))
@@ -83,6 +84,8 @@ typedef struct cz_number
 		double dval;
 	};
 } Number;
+
+#define CZ_NUMBER(o) ((struct cz_number *)(o))
 
 typedef struct cz_list
 {
@@ -133,7 +136,7 @@ typedef struct cz_quotation
 #define apisend(RCV, MSG, ARGS...) ({                \
 	struct cz_object *r = (struct cz_object *)(RCV); \
 	cz_methodfn       m = bind(cz, r, (MSG));        \
-	Stack_push_bulk(cz->stack, ##ARGS, (RCV));       \
+	Stack_push_bulk(cz->stack, ##ARGS);              \
 	m(cz, r);                                        \
 })
 

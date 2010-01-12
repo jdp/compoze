@@ -38,6 +38,10 @@ VTable_delegated(CzState *cz, VTable *self)
 	return child;
 }
 
+/*
+ * Allocates space for and returns an object with a vtable specified
+ * in the `self` argument.
+ */
 Object *
 VTable_allocate(CzState *cz, VTable *self, int payloadSize)
 {
@@ -46,6 +50,11 @@ VTable_allocate(CzState *cz, VTable *self, int payloadSize)
 	return object;
 }
 
+/*
+ * Associates a key (any valid Object*, but usually a Symbol*) with a method
+ * in the specified vtable.
+ * The method itself is returned.
+ */
 Method
 VTable_add_method(CzState *cz, VTable *self, Object *key, Method method)
 {
@@ -59,6 +68,11 @@ VTable_add_method(CzState *cz, VTable *self, Object *key, Method method)
 	return m;
 }
 
+/*
+ * Returns the vtable entry associated with the key.
+ * If not found, it searches the parent vtables recursively.
+ * If still not found, returns a nil object.
+ */
 Object *
 VTable_lookup(CzState *cz, VTable *self, Object *key)
 {
