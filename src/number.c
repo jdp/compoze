@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include "compoze.h"
-#include "object.h"
-#include "stack.h"
-#include "number.h"
 
 /*
  * Returns an instance of a number.
@@ -13,8 +8,8 @@
 Object *
 Number_create_(CzState *cz, int val)
 {
-	Number *self = (Number *)send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("allocate"), sizeof(Number));
-	self->vt     = CZ_VTABLE(CZ_TNUMBER);
+	Number *self = (Number *)send(CZ_VTABLE(CZ_T_VTABLE), CZ_SYMBOL("allocate"), sizeof(Number));
+	self->vt     = CZ_VTABLE(CZ_T_NUMBER);
 	self->ival   = val;
 	self->hash   = val;
 	return (Object *)self;
@@ -56,8 +51,8 @@ Number_equals(CzState *cz, Object *self)
 void
 cz_bootstrap_number(CzState *cz)
 {
-	CZ_VTABLE(CZ_TNUMBER) = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
-	send(CZ_VTABLE(CZ_TNUMBER), CZ_SYMBOL("add-method"), CZ_SYMBOL("hash"), Number_hash);
-	send(CZ_VTABLE(CZ_TNUMBER), CZ_SYMBOL("add-method"), CZ_SYMBOL("equals"), Number_equals);
+	CZ_VTABLE(CZ_T_NUMBER) = VTable_delegated(cz, CZ_VTABLE(CZ_T_OBJECT));
+	send(CZ_VTABLE(CZ_T_NUMBER), CZ_SYMBOL("add-method"), CZ_SYMBOL("hash"), Number_hash);
+	send(CZ_VTABLE(CZ_T_NUMBER), CZ_SYMBOL("add-method"), CZ_SYMBOL("equals"), Number_equals);
 }
 

@@ -1,10 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "compoze.h"
-#include "object.h"
-#include "stack.h"
-#include "table.h"
 
 /*
  * Credit for primes table: Aaron Krowne
@@ -35,8 +29,8 @@ djb2_hash(void *key, size_t len)
 Object *
 Pair_create_(CzState *cz, Object *hash, Object *key, Object *value)
 {
-	Pair *self     = (Pair *)VTable_allocate(cz, CZ_VTABLE(CZ_TPAIR), sizeof(Pair));
-	self->vt       = CZ_VTABLE(CZ_TPAIR);
+	Pair *self     = (Pair *)VTable_allocate(cz, CZ_VTABLE(CZ_T_PAIR), sizeof(Pair));
+	self->vt       = CZ_VTABLE(CZ_T_PAIR);
 	self->key_hash = (size_t)hash;
 	self->key      = key;
 	self->value    = value;
@@ -50,8 +44,8 @@ Pair_create_(CzState *cz, Object *hash, Object *key, Object *value)
 Object *
 Table_new(CzState *cz)
 {
-	Table *self   = (Table *)VTable_allocate(cz, CZ_VTABLE(CZ_TTABLE), sizeof(Table));
-	self->vt      = CZ_VTABLE(CZ_TTABLE);
+	Table *self   = (Table *)VTable_allocate(cz, CZ_VTABLE(CZ_T_TABLE), sizeof(Table));
+	self->vt      = CZ_VTABLE(CZ_T_TABLE);
 	self->prime   = 0;
 	self->size    = 0;
 	self->cap     = primes[0];
@@ -179,7 +173,7 @@ Table_lookup(CzState *cz, Object *self, Object *key)
 void
 cz_bootstrap_table(CzState *cz)
 {
-	CZ_VTABLE(CZ_TPAIR)  = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
-	CZ_VTABLE(CZ_TTABLE) = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
+	CZ_VTABLE(CZ_T_PAIR)  = VTable_delegated(cz, CZ_VTABLE(CZ_T_OBJECT));
+	CZ_VTABLE(CZ_T_TABLE) = VTable_delegated(cz, CZ_VTABLE(CZ_T_OBJECT));
 }
 	

@@ -8,7 +8,7 @@ SRC = bufio.c \
       quotation.c \
       main.c
 OBJ = ${SRC:.c=.o}
-LIB = -lreadline
+LIB = -lreadline -lgc
 CC = gcc
 CFLAGS = -Wall
 ifdef DEBUG

@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include "compoze.h"
-#include "stack.h"
-#include "object.h"
-#include "quotation.h"
 
 /*
  * ( -- Q )
@@ -12,8 +7,8 @@
 Object *
 Quotation_new(CzState *cz)
 {
-	Quotation *self = CZ_QUOTATION(send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("allocate"), sizeof(Quotation)));
-	self->vt    = CZ_VTABLE(CZ_TQUOTATION);
+	Quotation *self = CZ_QUOTATION(send(CZ_VTABLE(CZ_T_VTABLE), CZ_SYMBOL("allocate"), sizeof(Quotation)));
+	self->vt    = CZ_VTABLE(CZ_T_QUOTATION);
 	self->size  = 0;
 	self->cap   = 0;
 	self->items = NULL;
@@ -63,7 +58,7 @@ Quotation_eval(CzState *cz)
 	
 	for (i = 0; i < self->size; i++) {
 		switch (CZ_VTYPE_ID(self->items[i]->vt)) {
-			case CZ_TSYMBOL:
+			case CZ_T_SYMBOL:
 				apisend(Stack_pop(cz->stack), self->items[i]);
 				break;
 			default:

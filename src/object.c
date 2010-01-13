@@ -14,14 +14,7 @@
  * The Software is provided "as is".  Use entirely at your own risk.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "compoze.h"
-#include "stack.h"
-#include "table.h"
-#include "object.h"
-#include "number.h"
 
 /*
  * Given a parent VTable, the function returns a new VTable inheriting
@@ -93,7 +86,7 @@ bind(CzState *cz, Object *rcv, Object *msg)
 	Method m;
 	VTable *vt = rcv->vt;
 	
-	m = ((msg == CZ_SYMBOL("__lookup__")) && (rcv == (Object *)CZ_VTABLE(CZ_TVTABLE)))
+	m = ((msg == CZ_SYMBOL("__lookup__")) && (rcv == (Object *)CZ_VTABLE(CZ_T_VTABLE)))
       ? (Method)VTable_lookup(0, vt, msg)
       : (Method)send(vt, CZ_SYMBOL("__lookup__"), msg);
 	return m;
@@ -114,7 +107,7 @@ Symbol_intern(CzState *cz, char *string)
 		pair = (Pair *)pair->next;
 	}
 	symbol = (Object *)malloc(sizeof(Symbol));
-	symbol->vt = CZ_VTABLE(CZ_TSYMBOL);
+	symbol->vt = CZ_VTABLE(CZ_T_SYMBOL);
 	symbol->hash = hash;
 	((Symbol *)symbol)->frozen = CZ_FALSE;
 	((Symbol *)symbol)->string = strdup(string);
@@ -158,26 +151,26 @@ bootstrap(CzState *cz)
 	cz->symbols = (Table *)Table_new(cz);
 	cz->strings = (Table *)Table_new(cz);
 	
-	CZ_VTABLE(CZ_TVTABLE)     = VTable_delegated(cz, 0);
-	CZ_VTABLE(CZ_TVTABLE)->vt = CZ_VTABLE(CZ_TVTABLE);
+	CZ_VTABLE(CZ_T_VTABLE)     = VTable_delegated(cz, 0);
+	CZ_VTABLE(CZ_T_VTABLE)->vt = CZ_VTABLE(CZ_T_VTABLE);
 
-	CZ_VTABLE(CZ_TOBJECT)         = VTable_delegated(cz, 0);
-	CZ_VTABLE(CZ_TOBJECT)->vt     = CZ_VTABLE(CZ_TVTABLE);
-	CZ_VTABLE(CZ_TOBJECT)->parent = CZ_VTABLE(CZ_TOBJECT);
+	CZ_VTABLE(CZ_T_OBJECT)         = VTable_delegated(cz, 0);
+	CZ_VTABLE(CZ_T_OBJECT)->vt     = CZ_VTABLE(CZ_T_VTABLE);
+	CZ_VTABLE(CZ_T_OBJECT)->parent = CZ_VTABLE(CZ_T_OBJECT);
 
-	CZ_VTABLE(CZ_TSYMBOL)    = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
-	CZ_VTABLE(CZ_TWORD)      = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
-	CZ_VTABLE(CZ_TQUOTATION) = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
-	CZ_VTABLE(CZ_TLIST)      = VTable_delegated(cz, CZ_VTABLE(CZ_TOBJECT));
+	CZ_VTABLE(CZ_T_SYMBOL)    = VTable_delegated(cz, CZ_VTABLE(CZ_T_OBJECT));
+	CZ_VTABLE(CZ_T_WORD)      = VTable_delegated(cz, CZ_VTABLE(CZ_T_OBJECT));
+	CZ_VTABLE(CZ_T_QUOTATION) = VTable_delegated(cz, CZ_VTABLE(CZ_T_OBJECT));
+	CZ_VTABLE(CZ_T_LIST)      = VTable_delegated(cz, CZ_VTABLE(CZ_T_OBJECT));
 
-	VTable_add_method(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("__lookup__"), (Method)VTable_lookup);
-	VTable_add_method(cz, CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("add-method"), (Method)VTable_add_method);
+	VTable_add_method(cz, CZ_VTABLE(CZ_T_VTABLE), CZ_SYMBOL("__lookup__"), (Method)VTable_lookup);
+	VTable_add_method(cz, CZ_VTABLE(CZ_T_VTABLE), CZ_SYMBOL("add-method"), (Method)VTable_add_method);
 
-	send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("add-method"), CZ_SYMBOL("allocate"),  VTable_allocate);
-	send(CZ_VTABLE(CZ_TVTABLE), CZ_SYMBOL("add-method"), CZ_SYMBOL("delegated"), VTable_delegated);
+	send(CZ_VTABLE(CZ_T_VTABLE), CZ_SYMBOL("add-method"), CZ_SYMBOL("allocate"),  VTable_allocate);
+	send(CZ_VTABLE(CZ_T_VTABLE), CZ_SYMBOL("add-method"), CZ_SYMBOL("delegated"), VTable_delegated);
 	
-	send(CZ_VTABLE(CZ_TSYMBOL), CZ_SYMBOL("add-method"), CZ_SYMBOL("hash"), Symbol_hash);
-	send(CZ_VTABLE(CZ_TSYMBOL), CZ_SYMBOL("add-method"), CZ_SYMBOL("equals"), Symbol_equals);
+	send(CZ_VTABLE(CZ_T_SYMBOL), CZ_SYMBOL("add-method"), CZ_SYMBOL("hash"), Symbol_hash);
+	send(CZ_VTABLE(CZ_T_SYMBOL), CZ_SYMBOL("add-method"), CZ_SYMBOL("equals"), Symbol_equals);
 	
 	cz_bootstrap_number(cz);
 	

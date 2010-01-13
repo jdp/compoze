@@ -2,12 +2,8 @@
  * Generic stack interface.
  */
  
-#include <stdio.h>
-#include <stdlib.h>
 #include <stdarg.h>
 #include "compoze.h"
-#include "object.h"
-#include "stack.h"
 
 /*
  * Creates a new stack with the specified size.
