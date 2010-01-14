@@ -22,9 +22,9 @@ Quotation_new(CzState *cz)
  * is appended to Q, and Q is then pushed back onto the stack.
  */
 CzObject *
-Quotation_append(CzState *cz)
+Quotation_append(CzState *cz, CzObject *self)
 {
-	CzQuotation *q = CZ_AS(Quotation, CZ_POP());
+	CzQuotation *q = CZ_AS(Quotation, self);
 	CzObject *object = CZ_POP();
 	if ((q->size + 1) > q->cap) {
 		q->items = (CzObject **)CZ_REALLOC(q->items, sizeof(CzObject *) * (q->cap + 1) * 2);
@@ -36,44 +36,48 @@ Quotation_append(CzState *cz)
 }
 
 CzObject *
-Quotation_at(CzState *cz)
+Quotation_at(CzState *cz, CzObject *self)
 {
-	CzQuotation *self = CZ_AS(Quotation, CZ_POP());
 	CzNumber *num = CZ_AS(Number, CZ_POP());
-	CzObject *obj = self->items[num->ival];
+	CzObject *obj = CZ_AS(Quotation, self)->items[num->ival];
 	CZ_PUSH(obj);
 	return obj;
 }
 
 CzObject *
-Quotation_eval(CzState *cz)
+Quotation_eval(CzState *cz, CzObject *self)
 {
 	int i;
-	CzQuotation *self = CZ_AS(Quotation, CZ_POP());
-	
-	if (self->size == 0) {
+
+	if (CZ_AS(Quotation, self)->size == 0) {
 		return CZ_NIL;
 	}
 	
-	for (i = 0; i < self->size; i++) {
-		if (CZ_IS_PRIMITIVE(self->items[i])) {
-			CZ_PUSH(self->items[i]);
+	for (i = 0; i < CZ_AS(Quotation, self)->size; i++) {
+		if (CZ_IS_PRIMITIVE(CZ_AS(Quotation, self)->items[i])) {
+			CZ_PUSH(CZ_AS(Quotation, self)->items[i]);
 		}
 		else {
-			switch (self->items[i]->type) {
+			switch (CZ_AS(Quotation, self)->items[i]->type) {
 				case CZ_T_Symbol:
-					printf("sending symbol `%s'\n", CZ_AS(Symbol, self->items[i])->string);
-					send2(self->items[i]);
+					send2(CZ_AS(Quotation, self)->items[i]);
 					break;
 				default:
-					printf("obj type: %d\n", self->items[i]->type);
-					CZ_PUSH(self->items[i]);
+					CZ_PUSH(CZ_AS(Quotation, self)->items[i]);
 					break;
 			}
 		}
 	}
-	printf("stack height: %d\n", cz->stack->top);
 	
 	return CZ_NIL;
 }
 
+#define cz_define_method(T, S, M) VTable_add_method(cz, CZ_VTABLE(T), CZ_SYMBOL(S), (CzMethod)M)
+
+void
+cz_bootstrap_quotation(CzState *cz)
+{
+	cz_define_method(Quotation, "new", Quotation_new);
+	cz_define_method(Quotation, "at", Quotation_at);
+	cz_define_method(Quotation, "eval", Quotation_eval);
+}

@@ -170,8 +170,8 @@ bootstrap(CzState *cz)
 	VTable_add_method(cz, CZ_VTABLE(Object), CZ_SYMBOL("equals"), (CzMethod)Object_same);
 	
 	cz_bootstrap_number(cz);
-	
 	cz_bootstrap_table(cz);
+	cz_bootstrap_quotation(cz);
 	
 	printf("straps booted.\n");
 	

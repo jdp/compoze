@@ -34,7 +34,7 @@ repl(void)
 		lex = Lexer_new(buf);
 		par = Parser_new();
 		Parser_parse(par, cz, lex);
-		Quotation_eval(cz);
+		Quotation_eval(cz, CZ_POP());
 		for (i = 0; i < cz->stack->top; i++) {
 			o = cz->stack->items[i];
 			if (CZ_IS_NIL(o)) {

@@ -277,10 +277,13 @@ CzObject *
 Quotation_new(CzState *);
 
 CzObject *
-Quotation_append(CzState *);
+Quotation_append(CzState *, CzObject *);
 
 CzObject *
-Quotation_eval(CzState *);
+Quotation_eval(CzState *, CzObject *);
+
+void
+cz_bootstrap_quotation(CzState *);
 
 /* Numbers */
 

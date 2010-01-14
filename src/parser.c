@@ -62,7 +62,7 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 			case T_EQUOTE:
 				qdepth--;
 				Stack_swap(cz->stack);
-				Quotation_append(cz);
+				Quotation_append(cz, CZ_POP());
 				break;
 				
 			/* Add a word to the quotation, as a symbol */
@@ -70,7 +70,7 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 				o = Symbol_intern(cz, l->buffer);
 				CZ_PUSH(o);
 				Stack_swap(cz->stack);
-				Quotation_append(cz);
+				Quotation_append(cz, CZ_POP());
 				break;
 				
 			/* Add a number to the quotation */
@@ -78,7 +78,7 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 				o = Number_create_(cz, atoi(l->buffer));
 				CZ_PUSH(o);
 				Stack_swap(cz->stack);
-				Quotation_append(cz);
+				Quotation_append(cz, CZ_POP());
 				break;
 				
 			/* facepalm */
