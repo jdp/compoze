@@ -4,16 +4,15 @@
  * ( -- Q )
  * Pushes an empty Quotation object to the stack.
  */
-Object *
+CzObject *
 Quotation_new(CzState *cz)
 {
-	Quotation *self = CZ_QUOTATION(send(CZ_VTABLE(CZ_T_VTABLE), CZ_SYMBOL("allocate"), sizeof(Quotation)));
-	self->vt    = CZ_VTABLE(CZ_T_QUOTATION);
+	CzQuotation *self = CZ_MAKE_OBJECT(Quotation);
 	self->size  = 0;
 	self->cap   = 0;
 	self->items = NULL;
 	CZ_PUSH(self);
-	return CZ_OBJECT(self);
+	return CZ_AS(Object, self);
 }
 
 /*
@@ -22,13 +21,13 @@ Quotation_new(CzState *cz)
  * underneath it. The quotation Q is popped, then the object A is popped, A
  * is appended to Q, and Q is then pushed back onto the stack.
  */
-Object *
+CzObject *
 Quotation_append(CzState *cz)
 {
-	Quotation *q = CZ_QUOTATION(CZ_POP());
-	Object *object = CZ_POP();
+	CzQuotation *q = CZ_AS(Quotation, CZ_POP());
+	CzObject *object = CZ_POP();
 	if ((q->size + 1) > q->cap) {
-		q->items = (Object **)realloc(q->items, sizeof(Object *) * (q->cap + 1) * 2);
+		q->items = (CzObject **)CZ_REALLOC(q->items, sizeof(CzObject *) * (q->cap + 1) * 2);
 		q->cap = (q->cap + 1) * 2;
 	}
 	q->items[q->size++] = object;
@@ -36,36 +35,45 @@ Quotation_append(CzState *cz)
 	return object;
 }
 
-Object *
+CzObject *
 Quotation_at(CzState *cz)
 {
-	Quotation *self = CZ_QUOTATION(CZ_POP());
-	Number *num = CZ_NUMBER(CZ_POP());
-	Object *obj = self->items[num->ival];
+	CzQuotation *self = CZ_AS(Quotation, CZ_POP());
+	CzNumber *num = CZ_AS(Number, CZ_POP());
+	CzObject *obj = self->items[num->ival];
 	CZ_PUSH(obj);
 	return obj;
 }
 
-Object *
+CzObject *
 Quotation_eval(CzState *cz)
 {
 	int i;
-	Quotation *self = CZ_QUOTATION(CZ_POP());
+	CzQuotation *self = CZ_AS(Quotation, CZ_POP());
 	
 	if (self->size == 0) {
 		return CZ_NIL;
 	}
 	
 	for (i = 0; i < self->size; i++) {
-		switch (CZ_VTYPE_ID(self->items[i]->vt)) {
-			case CZ_T_SYMBOL:
-				apisend(Stack_pop(cz->stack), self->items[i]);
-				break;
-			default:
-				CZ_PUSH(self->items[i]);
-				break;
+		if (CZ_IS_PRIMITIVE(self->items[i])) {
+			CZ_PUSH(self->items[i]);
+		}
+		else {
+			switch (self->items[i]->type) {
+				case CZ_T_Symbol:
+					printf("sending symbol `%s'\n", CZ_AS(Symbol, self->items[i])->string);
+					send2(self->items[i]);
+					break;
+				default:
+					printf("obj type: %d\n", self->items[i]->type);
+					CZ_PUSH(self->items[i]);
+					break;
+			}
 		}
 	}
+	printf("stack height: %d\n", cz->stack->top);
 	
 	return CZ_NIL;
 }
+

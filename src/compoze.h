@@ -9,6 +9,17 @@
 
 enum { CZ_ERR, CZ_OK };
 
+#define NOTDEADYET           printf("-- STILL OK IN %s AT %d --\n", __FILE__, __LINE__);
+
+#define UNUSED(E)            do { (void)(E); } while (0)
+
+#define CZ_ALLOC(T)          (T *)CZ_MALLOC(sizeof(T))
+#define CZ_ALLOC_N(T,N)      (T *)CZ_MALLOC(sizeof(T)*(N))
+#define CZ_MALLOC            GC_MALLOC
+#define CZ_CALLOC(m,n)       GC_MALLOC((m)*(n))
+#define CZ_REALLOC           GC_REALLOC
+#define CZ_FREE(s)           UNUSED(s)
+
 struct cz_vtable;
 struct cz_object;
 struct cz_symbol;
@@ -16,23 +27,23 @@ struct cz_table;
 struct cz_state;
 
 typedef struct cz_object *(*cz_methodfn)(struct cz_state *, struct cz_object *, ...);
-typedef cz_methodfn Method;
+typedef cz_methodfn CzMethod;
 
 typedef enum
 {
-	CZ_T_NIL,
-	CZ_T_BOOLEAN,
-	CZ_T_VTABLE,
-	CZ_T_OBJECT,
-	CZ_T_SYMBOL,
-	CZ_T_WORD,
-	CZ_T_NUMBER,
-	CZ_T_STRING,
-	CZ_T_LIST,
-	CZ_T_PAIR,
-	CZ_T_TABLE,
-	CZ_T_QUOTATION,
-	CZ_T_USER,
+	CZ_T_Nil,
+	CZ_T_Boolean,
+	CZ_T_VTable,
+	CZ_T_Object,
+	CZ_T_Symbol,
+	CZ_T_Word,
+	CZ_T_Number,
+	CZ_T_String,
+	CZ_T_List,
+	CZ_T_Pair,
+	CZ_T_Table,
+	CZ_T_Quotation,
+	CZ_T_User,
 	CZ_T_MAX
 } CzType;
 
@@ -43,25 +54,29 @@ typedef enum
  *   each value has bit #2 set (0b110 and 0b010). That makes it easy to check
  *   if a primitive value is boolean.
  */
-#define CZ_NIL             ((Object *)0)
-#define CZ_ZERO            ((Object *)1)
-#define CZ_TRUE            ((Object *)2)
-#define CZ_FALSE           ((Object *)6)
-#define CZ_IS_PRIMITIVE(o) ((Object *)(o) < (Object *)7)
-#define CZ_IS_NIL(o)       ((Object *)(o) == CZ_NIL)
+#define CZ_NIL             ((CzObject *)0)
+#define CZ_UNDEFINED       ((CzObject *)1)
+#define CZ_TRUE            ((CzObject *)2)
+#define CZ_FALSE           ((CzObject *)6)
+#define CZ_IS_PRIMITIVE(o) ((CzObject *)(o) < (CzObject *)7)
+#define CZ_IS_NIL(o)       ((CzObject *)(o) == CZ_NIL)
 #define CZ_IS_BOOL(o)      ((unsigned int)(o) & 2)
-#define CZ_IS_NUMBER(o)    ((o)->vt == cz->vtables[CZ_T_NUMBER])
 
-#define CZ_VTYPE(x)     (((struct Object *)(x))->vt)
-#define CZ_VTYPE_ID(t)  ((unsigned int)((t)-CZ_T_NIL))
-#define CZ_VTABLE(t)    (cz->vtables[CZ_VTYPE_ID(t)])
+#define CZ_VTABLE(T)    (cz->vtables[CZ_T_##T])
 
 #define CZ_OBJECT_HEADER     \
 	int               type;  \
 	struct cz_vtable *vt;    \
-	int               refct; \
 	size_t            hash;
 
+#define CZ_MAKE_OBJECT(T) ({          \
+	Cz##T *o = CZ_ALLOC(Cz##T);       \
+	o->type  = CZ_T_##T;              \
+	o->vt    = cz->vtables[CZ_T_##T]; \
+	o;                                \
+})
+
+#define CZ_AS(T,O)      ((Cz##T *)(O))
 #define CZ_OBJECT(o)    ((struct cz_object *)(o))
 #define CZ_SYMBOL(s)    (Symbol_intern(cz, s))
 #define CZ_NUMBER(o)    ((struct cz_number *)(o))
@@ -70,21 +85,21 @@ typedef enum
 typedef struct cz_vtable
 {
 	CZ_OBJECT_HEADER
-	struct cz_table   *table;
-	struct cz_vtable  *parent;
-} VTable;
+	struct cz_table *table;
+	struct cz_vtable *parent;
+} CzVTable;
 
 typedef struct cz_object
 {
 	CZ_OBJECT_HEADER
-} Object;
+} CzObject;
 
 typedef struct cz_symbol
 {
 	CZ_OBJECT_HEADER
-	char             *string;
+	char *string;
 	struct cz_object *frozen;
-} Symbol;
+} CzSymbol;
 
 typedef struct cz_number
 {
@@ -94,75 +109,77 @@ typedef struct cz_number
 		int ival;
 		double dval;
 	};
-} Number;
+} CzNumber;
 
 typedef struct cz_list
 {
 	CZ_OBJECT_HEADER
-	size_t       size;
-	size_t       cap;
+	size_t size;
+	size_t cap;
 	struct cz_object **items;
-} List;
+} CzList;
 
 typedef struct cz_pair
 {
 	CZ_OBJECT_HEADER
-	size_t            key_hash;
+	size_t key_hash;
 	struct cz_object *key;
 	struct cz_object *value;
-	struct cz_pair   *prev;
-	struct cz_pair   *next;
-} Pair;
+	struct cz_pair *prev;
+	struct cz_pair *next;
+} CzPair;
 
 typedef struct cz_table
 {
 	CZ_OBJECT_HEADER
-	int        prime;
-	size_t     size;
-	size_t     cap;
+	int prime;
+	size_t size;
+	size_t cap;
 	struct cz_object **items;
-} Table;
+} CzTable;
 
 typedef struct cz_quotation
 {
-	CZ_OBJECT_HEADER;
-	size_t       size;
-	size_t       cap;
+	CZ_OBJECT_HEADER
+	size_t size;
+	size_t cap;
 	struct cz_object **items;
-} Quotation;
+} CzQuotation;
 
 typedef struct cz_stack
 {
-	int      top;
-	int      size;
-	Object **items;
-} Stack;
+	CZ_OBJECT_HEADER
+	int top;
+	int size;
+	struct cz_object **items;
+} CzStack;
 
 typedef struct cz_state
 {
 	CZ_OBJECT_HEADER
-	VTable *vtables[CZ_T_MAX];
-	Table  *symbols, *strings;
-	Stack  *stack;
+	struct cz_vtable *vtables[CZ_T_MAX];
+	struct cz_table *symbols, *strings;
+	struct cz_stack *stack;
 } CzState;
-
-#define incref(o) (o->refct++)
-#define decref(o) (o->refct--)
 
 #define send(RCV, MSG, ARGS...) ({                   \
 	struct cz_object *r = (struct cz_object *)(RCV); \
 	cz_methodfn       m = bind(cz, r, (MSG));        \
+	if (CZ_IS_PRIMITIVE(m)) {                        \
+		printf("what the fuck %p!!!\n", m);          \
+	}                                                \
 	m(cz, r, ##ARGS);                                \
 })
 
-#define apisend(RCV, MSG, ARGS...) ({                \
-	struct cz_object *r = (struct cz_object *)(RCV); \
-	cz_methodfn       m = bind(cz, r, (MSG));        \
-	Stack_push_bulk(cz->stack, ##ARGS);              \
-	m(cz, r);                                        \
+#define send2(MSG) ({ \
+	struct cz_object *r = Stack_pop(cz->stack); \
+	cz_methodfn m = bind(cz, r, (MSG)); \
+	if (!CZ_IS_PRIMITIVE(m)) { \
+		m(cz, r); \
+	} \
 })
 
-#define CZ_PUSH(o) (Stack_push(cz->stack, (Object *)(o)))
+#define CZ_PUSH(o) (Stack_push(cz->stack, (CzObject *)(o)))
 #define CZ_POP()   (Stack_pop(cz->stack))
 
 unsigned int djb2_hash(void *, size_t);
@@ -175,106 +192,106 @@ bootstrap(CzState *);
 inline void *
 alloc(size_t);
 
-Object *
-VTable_lookup(CzState *, VTable *, Object *);
+CzObject *
+VTable_lookup(CzState *, CzVTable *, CzObject *);
 
-VTable *
-VTable_delegated(CzState *, VTable *);
+CzVTable *
+VTable_delegated(CzState *, CzVTable *);
 
-Object *
-VTable_allocate(CzState *, VTable *, int);
+CzObject *
+VTable_allocate(CzState *, CzVTable *);
 
-Method
-VTable_add_method(CzState *, VTable *, Object *, Method);
+CzMethod
+VTable_add_method(CzState *, CzVTable *, CzObject *, CzMethod);
 
-Method
-bind(CzState *, Object *, Object *);
+CzMethod
+bind(CzState *, CzObject *, CzObject *);
 
-Object *
+CzObject *
 Symbol_intern(CzState *, char *);
 
-Object *
-Symbol_hash(CzState *, Object *);
+CzObject *
+Object_hash(CzState *);
 
-Object *
-Symbol_equals(CzState *, Object *, Object *);
+CzObject *
+Object_same(CzState *);
 
 /* Stacks */
 
 #define Stack_peek(s)  ((s)->items[(s)->top-1])
 #define Stack_empty(s) ((s)->top == 0)
 
-Stack *
+CzStack *
 Stack_new(unsigned int);
 
 int
-Stack_destroy(Stack *);
+Stack_destroy(CzStack *);
 
 int
-Stack_reset(Stack *);
+Stack_reset(CzStack *);
 
 int
-Stack_push(Stack *, Object *);
+Stack_push(CzStack *, CzObject *);
 
 int
-Stack_push_bulk(Stack *, ...);
+Stack_push_bulk(CzStack *, ...);
 
-Object *
-Stack_pop(Stack *);
+CzObject *
+Stack_pop(CzStack *);
 
 int
-Stack_swap(Stack *s);
+Stack_swap(CzStack *s);
 
 /* Tables */
 
-Object *
-Table_new(CzState *);
+CzObject *
+Table_create_(CzState *);
 
-Object *
-Table_insert(CzState *, Object *, Object *, Object *);
+CzObject *
+Table_insert_(CzState *, CzObject *, size_t, void *, void *);
 
-Object *
-Table_lookup(CzState *, Object *, Object *);
+CzObject *
+Table_insert_pair_(CzState *, CzObject *, CzObject *);
 
-Object *
-Pair_create_(CzState *, Object *, Object *, Object *);
+CzObject *
+Table_resize_(CzState *, CzObject *);
 
-Object *
-Table_insert_(CzState *, Object *, size_t, void *, void *);
+CzObject *
+Table_lookup_(CzState *, CzObject *, size_t, CzObject *);
 
-Object *
-Table_insert_pair_(CzState *, Object *, Object *);
+CzObject *
+Table_insert(CzState *);
 
-Object *
-Table_resize_(CzState *, Object *);
+CzObject *
+Table_lookup(CzState *);
 
-Object *
-Table_lookup_(CzState *, Object *, size_t, Object *);
+CzObject *
+Pair_create_(CzState *, CzObject *, CzObject *, CzObject *);
 
 void
 cz_bootstrap_table(CzState *);
 
 /* Quotations */
 
-Object *
+CzObject *
 Quotation_new(CzState *);
 
-Object *
+CzObject *
 Quotation_append(CzState *);
 
-Object *
+CzObject *
 Quotation_eval(CzState *);
 
 /* Numbers */
 
-Object *
+CzObject *
 Number_create_(CzState *, int);
 
-Object *
-Number_hash(CzState *, Object *);
+CzObject *
+Number_hash(CzState *, CzObject *);
 
-Object *
-Number_equals(CzState *, Object *);
+CzObject *
+Number_equals(CzState *, CzObject *);
 
 void
 cz_bootstrap_number(CzState *);

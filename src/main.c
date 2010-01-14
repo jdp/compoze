@@ -18,9 +18,11 @@ repl(void)
 	cz_bufio *buf;
 	Lexer *lex;
 	Parser *par;
-	Object *o;
+	CzObject *o;
 	
-	CzState *cz = (CzState *)malloc(sizeof(CzState));
+	GC_INIT();
+	
+	CzState *cz = (CzState *)GC_MALLOC(sizeof(CzState));
 	bootstrap(cz);
 	
 	while (1) {
@@ -32,12 +34,11 @@ repl(void)
 		lex = Lexer_new(buf);
 		par = Parser_new();
 		Parser_parse(par, cz, lex);
-		//cz_tree(cz, CZ_QUOTATION(CZ_POP()), 0);
 		Quotation_eval(cz);
 		for (i = 0; i < cz->stack->top; i++) {
 			o = cz->stack->items[i];
 			if (CZ_IS_NIL(o)) {
-				printf("nil");
+				printf("nil ");
 			}
 			else if (o == CZ_TRUE) {
 				printf("true ");
@@ -45,17 +46,15 @@ repl(void)
 			else if (o == CZ_FALSE) {
 				printf("false ");
 			}
-			else if (CZ_IS_NUMBER(o)) {
-					printf("%d ", CZ_NUMBER(o)->ival);
+			else if (o->type == CZ_T_Number) {
+					printf("%d ", CZ_AS(Number, o)->ival);
 			}
 			else {
-				printf("%d:W ", CZ_VTYPE_ID(o));
+				printf("%d:W ", o->type);
 			}
 		}
 		printf("\n");
 		add_history(line);
-		czB_destroy(buf);
-		Lexer_destroy(lex);
 	}
 	
 }

@@ -8,14 +8,14 @@
 Lexer *
 Lexer_new(cz_bufio *in)
 {
-	Lexer *l = (Lexer *)malloc(sizeof(Lexer));
+	Lexer *l = (Lexer *)GC_MALLOC(sizeof(Lexer));
 	if (l == NULL) {
 		return NULL;
 	}
 	l->in = in;
 	l->bufsize = 8096;
 	l->bufused = -1;
-	l->buffer = (char *)malloc(sizeof(char)*l->bufsize);
+	l->buffer = (char *)GC_MALLOC(sizeof(char)*l->bufsize);
 	if (l->buffer == NULL) {
 		return NULL;
 	}
@@ -33,8 +33,8 @@ Lexer_destroy(Lexer *l)
 	if (l == NULL) {
 		return CZ_ERR;
 	}
-	free(l->buffer);
-	free(l);
+	GC_FREE(l->buffer);
+	GC_FREE(l);
 	return CZ_OK;
 }
 
@@ -61,7 +61,7 @@ save(Lexer *l, int c)
 			return CZ_ERR;
 		}
 		newsize = l->bufsize * 2;
-		l->buffer = (char *)realloc(l->buffer, sizeof(char) * newsize);
+		l->buffer = (char *)GC_REALLOC(l->buffer, sizeof(char) * newsize);
 		if (l->buffer == NULL) {
 			return CZ_ERR;
 		}

@@ -26,31 +26,31 @@ djb2_hash(void *key, size_t len)
 	return hash;
 }
 
-Object *
-Pair_create_(CzState *cz, Object *hash, Object *key, Object *value)
+/*
+ * Creates a new Pair object.
+ */
+CzObject *
+Pair_create_(CzState *cz, CzObject *hash, CzObject *key, CzObject *value)
 {
-	Pair *self     = (Pair *)VTable_allocate(cz, CZ_VTABLE(CZ_T_PAIR), sizeof(Pair));
-	self->vt       = CZ_VTABLE(CZ_T_PAIR);
+	CzPair *self   = CZ_MAKE_OBJECT(Pair);
 	self->key_hash = (size_t)hash;
 	self->key      = key;
 	self->value    = value;
-	return (Object *)self;
+	return CZ_AS(Object, self);
 }
 
 /*
- * ( -- T )
- * Creates a new Table object and puts it on top of the stack.
+ * Creates a new Table object.
  */
-Object *
-Table_new(CzState *cz)
+CzObject *
+Table_create_(CzState *cz)
 {
-	Table *self   = (Table *)VTable_allocate(cz, CZ_VTABLE(CZ_T_TABLE), sizeof(Table));
-	self->vt      = CZ_VTABLE(CZ_T_TABLE);
+	CzTable *self = CZ_MAKE_OBJECT(Table);
 	self->prime   = 0;
 	self->size    = 0;
 	self->cap     = primes[0];
-	self->items   = (Object **)calloc(self->cap, sizeof(Object *));
-	return (Object *)self;
+	self->items   = (CzObject **)CZ_CALLOC(self->cap, sizeof(CzObject *));
+	return CZ_AS(Object, self);
 }
 
 /*
@@ -58,11 +58,11 @@ Table_new(CzState *cz)
  * This is super dangerous.
  * Also super useful.
  */
-Object *
-Table_insert_(CzState *cz, Object *self, size_t hash, void *key, void *value)
+CzObject *
+Table_insert_(CzState *cz, CzObject *self, size_t hash, void *key, void *value)
 {
-	Object *pair;
-	pair = Pair_create_(cz, (Object *)hash, (Object *)key, (Object *)value);
+	CzObject *pair;
+	pair = Pair_create_(cz, CZ_AS(Object, hash), CZ_AS(Object, key), CZ_AS(Object, value));
 	Table_insert_pair_(cz, self, pair);
 	return self;
 }
@@ -71,100 +71,110 @@ Table_insert_(CzState *cz, Object *self, size_t hash, void *key, void *value)
  * Inserts a pair by pre-calculated hash into the table.
  * Reserved mostly for internal use.
  */
-Object *
-Table_insert_pair_(CzState *cz, Object *self, Object *pair)
+CzObject *
+Table_insert_pair_(CzState *cz, CzObject *self, CzObject *pair)
 {
-	Table *t;
+	CzTable *t;
 	size_t i;
 	
-	t = (Table *)self;
+	t = CZ_AS(Table, self);
 	if ((++(t->size) / t->cap) > 0.7) {
 		Table_resize_(cz, self);
 	}
-	i = (size_t)(((Pair *)pair)->key_hash) % t->cap;
-	((Pair *)pair)->next = (Pair *)t->items[i];
+	i = (size_t)(CZ_AS(Pair, pair)->key_hash) % t->cap;
+	CZ_AS(Pair, pair)->next = CZ_AS(Pair, t->items[i]);
 	t->items[i] = pair;
-	return self;
-}
-
-/*
- * Associates an object key with a value in the table.
- */
-Object *
-Table_insert(CzState *cz, Object *self, Object *key, Object *value)
-{
-	Object *hash, *pair;
-	
-	hash = send(key, CZ_SYMBOL("hash"));
-	pair = Pair_create_(cz, hash, hash, value);
-	Table_insert_pair_(cz, self, pair);
 	return self;
 }
 
 /*
  * Grows a table as needed.
  */
-Object *
-Table_resize_(CzState *cz, Object *self)
+CzObject *
+Table_resize_(CzState *cz, CzObject *self)
 {
-	Table *t;
-	Object **new_items;
+	CzTable *t;
+	CzObject **new_items;
 	size_t i;
 	
-	t = (Table *)self;
+	t = (CzTable *)self;
 	if ((t->size / t->cap) >= 0.7) {
 		t->cap = primes[++(t->prime)];
 	}
-	new_items = (Object **)calloc(t->cap, sizeof(Object *));
+	new_items = (CzObject **)CZ_CALLOC(t->cap, sizeof(CzObject *));
 	if (new_items == NULL) {
 		t->cap = primes[--(t->prime)];
 		return CZ_NIL;
 	}
-	memset(new_items, 0, t->cap * sizeof(Object *));
+	memset(new_items, 0, t->cap * sizeof(CzObject *));
 	for (i = 0; i < t->size; i++) {
-		new_items[((size_t)(((Pair *)t->items[i])->key_hash) % t->cap)] = t->items[i];
+		new_items[((size_t)(CZ_AS(Pair, t->items[i])->key_hash) % t->cap)] = t->items[i];
 	} 
-	free(t->items);
 	t->items = new_items;
 	return self;
 }
 
-Object *
-Table_lookup_(CzState *cz, Object *self, size_t hash, Object *key)
+CzObject *
+Table_lookup_(CzState *cz, CzObject *self, size_t hash, CzObject *key)
 {
-	Pair *pair;
+	CzPair *pair;
 	
-	pair = (Pair *)((Table *)self)->items[hash % ((Table *)self)->cap];
+	pair = CZ_AS(Pair, CZ_AS(Table, self)->items[hash % CZ_AS(Table, self)->cap]);
 	while (!CZ_IS_NIL(pair)) {
 		if (key == pair->key) {
 			return pair->value;
 		}
 		pair = pair->next;
 	}
+
+	return CZ_UNDEFINED;
+}
+
+/*
+ * Associates an object key with a value in the table.
+ * ( V K T -- T )
+ */
+CzObject *
+Table_insert(CzState *cz)
+{
+	CzObject *self, *key, *value, *hash, *pair;
 	
-	return CZ_NIL;
+	self = CZ_POP();
+	key = CZ_POP();
+	value = CZ_POP();
+	
+	hash = send(key, CZ_SYMBOL("hash"));
+	pair = Pair_create_(cz, hash, hash, value);
+	Table_insert_pair_(cz, self, pair);
+	
+	CZ_PUSH(self);
+	
+	return self;
 }
 
 /*
  * Returns the value associated with the key from the table.
  */
-Object *
-Table_lookup(CzState *cz, Object *self, Object *key)
+CzObject *
+Table_lookup(CzState *cz)
 {
-	Table *t;
-	Object *hash;
-	Pair *pair;
+	CzObject *self, *key, *hash;
+	CzPair *pair;
+	
+	self = CZ_POP();
+	key = CZ_POP();
 
-	t = (Table *)self;
 	hash = send(key, CZ_SYMBOL("hash"));
-	pair = (Pair *)t->items[(size_t)hash % t->cap];
+	pair = CZ_AS(Pair, CZ_AS(Table, self)->items[(size_t)hash % CZ_AS(Table, self)->cap]);
 	while (!CZ_IS_NIL(pair)) {
 		if (send(pair->key, CZ_SYMBOL("equals"), key) == CZ_TRUE) {
+			CZ_PUSH(pair->value);
 			return pair->value;
 		}
-		pair = (Pair *)pair->next;
+		pair = CZ_AS(Pair, pair->next);
 	}
-	return CZ_NIL;
+	CZ_PUSH(CZ_NIL);
+	return CZ_UNDEFINED;
 }
 
 /*
@@ -173,7 +183,7 @@ Table_lookup(CzState *cz, Object *self, Object *key)
 void
 cz_bootstrap_table(CzState *cz)
 {
-	CZ_VTABLE(CZ_T_PAIR)  = VTable_delegated(cz, CZ_VTABLE(CZ_T_OBJECT));
-	CZ_VTABLE(CZ_T_TABLE) = VTable_delegated(cz, CZ_VTABLE(CZ_T_OBJECT));
+	CZ_VTABLE(Pair)  = VTable_delegated(cz, CZ_VTABLE(Object));
+	CZ_VTABLE(Table) = VTable_delegated(cz, CZ_VTABLE(Object));
 }
 	

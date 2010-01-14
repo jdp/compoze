@@ -9,7 +9,7 @@
 Parser *
 Parser_new(void)
 {
-	Parser *p = (Parser *)malloc(sizeof(Parser));
+	Parser *p = (Parser *)GC_MALLOC(sizeof(Parser));
 	if (p == NULL) {
 		return NULL;
 	}
@@ -26,7 +26,7 @@ Parser_destroy(Parser *p)
 	if (p == NULL) {
 		return CZ_ERR;
 	}
-	free(p);
+	GC_FREE(p);
 	return CZ_OK;
 }
 
@@ -38,7 +38,7 @@ Parser_destroy(Parser *p)
 int
 Parser_parse(Parser *p, CzState *cz, Lexer *l)
 {
-	Object *o;
+	CzObject *o;
 	//int in_def = 0;
 	int token, qdepth = 0;
 	   
@@ -95,13 +95,13 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
  * Debugging function to display a simplified node tree.
  */
 void
-cz_tree(CzState *cz, Quotation *q, int depth)
+cz_tree(CzState *cz, CzQuotation *q, int depth)
 {
 	int i;
 	for (i = 0; i < q->size; i++) {
-		if (q->items[i]->vt == CZ_VTABLE(CZ_T_QUOTATION)) {
+		if (q->items[i]->type == CZ_T_Quotation) {
 			printf("[ ");
-			cz_tree(cz, (Quotation *)q->items[i], depth+1);
+			cz_tree(cz, CZ_AS(Quotation, q->items[i]), depth+1);
 			printf("] ");
 		}
 		else {

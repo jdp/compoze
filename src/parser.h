@@ -25,7 +25,7 @@ int
 Parser_parse(Parser *, CzState *, Lexer *);
 
 void
-cz_tree(CzState *, Quotation *, int);
+cz_tree(CzState *, CzQuotation *, int);
 
 #endif /* PARSER_H */
 

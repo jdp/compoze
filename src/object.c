@@ -20,14 +20,14 @@
  * Given a parent VTable, the function returns a new VTable inheriting
  * from the provided parent VTable.
  */
-VTable *
-VTable_delegated(CzState *cz, VTable *self)
+CzVTable *
+VTable_delegated(CzState *cz, CzVTable *self)
 {
-	VTable *child  = (VTable *)malloc(sizeof(VTable));
-	child->vt      = self ? self->vt : 0;
-	child->hash    = (size_t)(self ? self->vt : 0);
-	child->table   = (Table *)Table_new(cz);
-	child->parent  = self;
+	CzVTable *child  = CZ_ALLOC(CzVTable);
+	child->vt        = self ? self->vt : 0;
+	child->hash      = (size_t)(self ? self->vt : 0);
+	child->table     = CZ_AS(Table, Table_create_(cz));
+	child->parent    = self;
 	return child;
 }
 
@@ -35,28 +35,27 @@ VTable_delegated(CzState *cz, VTable *self)
  * Allocates space for and returns an object with a vtable specified
  * in the `self` argument.
  */
-Object *
-VTable_allocate(CzState *cz, VTable *self, int payloadSize)
+CzObject *
+VTable_allocate(CzState *cz, CzVTable *self)
 {
-	Object *object = (Object *)malloc(payloadSize);
-	object->vt = self;
+	CzObject *object = CZ_MAKE_OBJECT(Object);
 	return object;
 }
 
 /*
- * Associates a key (any valid Object*, but usually a Symbol*) with a method
- * in the specified vtable.
+ * Associates a key (any valid object, but usually a symbol) with a method
+ *   in the specified vtable.
  * The method itself is returned.
  */
-Method
-VTable_add_method(CzState *cz, VTable *self, Object *key, Method method)
+CzMethod
+VTable_add_method(CzState *cz, CzVTable *self, CzObject *key, CzMethod method)
 {
-	Method m;
+	CzMethod m;
 	
-	m = (Method)Table_lookup_(cz, (Object *)self->table, ((Symbol *)key)->hash, key);
-	if (CZ_IS_NIL(m)) {
+	m = (CzMethod)Table_lookup_(cz, CZ_AS(Object, self->table), CZ_AS(Symbol, key)->hash, key);
+	if (CZ_AS(Object, m) == CZ_UNDEFINED) {
 		m = method;
-		Table_insert_(cz, (Object *)self->table, ((Symbol *)key)->hash, key, (Object *)m);
+		Table_insert_(cz, CZ_AS(Object, self->table), CZ_AS(Symbol, key)->hash, key, CZ_AS(Object, m));
 	}
 	return m;
 }
@@ -66,80 +65,79 @@ VTable_add_method(CzState *cz, VTable *self, Object *key, Method method)
  * If not found, it searches the parent vtables recursively.
  * If still not found, returns a nil object.
  */
-Object *
-VTable_lookup(CzState *cz, VTable *self, Object *key)
+CzObject *
+VTable_lookup(CzState *cz, CzVTable *self, CzObject *key)
 {
-	Object *value;
+	CzObject *value;
 	
-	if (!CZ_IS_NIL(value = Table_lookup_(cz, (Object *)self->table, ((Symbol *)key)->hash, key))) {
+	if ((value = Table_lookup_(cz, CZ_AS(Object, self->table), CZ_AS(Symbol, key)->hash, key)) != CZ_UNDEFINED) {
 		return value;
 	}
 	if (self->parent) {
-		return send(self->parent, CZ_SYMBOL("__lookup__"), key);
+		return VTable_lookup(cz, self->parent, key);
 	}
-	return CZ_NIL;
+	return CZ_UNDEFINED;
 }
 
-Method
-bind(CzState *cz, Object *rcv, Object *msg)
+CzMethod
+bind(CzState *cz, CzObject *rcv, CzObject *msg)
 {
-	Method m;
-	VTable *vt = rcv->vt;
+	CzMethod m;
+	CzVTable *vt = rcv->vt;
 	
-	m = ((msg == CZ_SYMBOL("__lookup__")) && (rcv == (Object *)CZ_VTABLE(CZ_T_VTABLE)))
-      ? (Method)VTable_lookup(0, vt, msg)
-      : (Method)send(vt, CZ_SYMBOL("__lookup__"), msg);
+	/*
+	m = ((msg == CZ_SYMBOL("__lookup__")) && (rcv == CZ_AS(Object, CZ_VTABLE(VTable))))
+      ? (CzMethod)VTable_lookup(cz, vt, msg)
+      : (CzMethod)send(vt, CZ_SYMBOL("__lookup__"), msg);
+    */
+    m = (CzMethod)VTable_lookup(cz, vt, msg);
 	return m;
 }
 
-Object *
+CzObject *
 Symbol_intern(CzState *cz, char *string)
 {
-	Object *symbol;
-	Pair *pair;
+	CzSymbol *symbol;
+	CzPair *pair;
 	size_t hash;
 	hash = djb2_hash(string, strlen(string));
-	pair = (Pair *)cz->symbols->items[hash % cz->symbols->cap];
+	pair = CZ_AS(Pair, cz->symbols->items[hash % cz->symbols->cap]);
 	while (!CZ_IS_NIL(pair)) {
 		if (strcmp((char *)pair->key, string) == 0) {
 			return pair->value;
 		}
-		pair = (Pair *)pair->next;
+		pair = pair->next;
 	}
-	symbol = (Object *)malloc(sizeof(Symbol));
-	symbol->vt = CZ_VTABLE(CZ_T_SYMBOL);
+	symbol = CZ_MAKE_OBJECT(Symbol);
 	symbol->hash = hash;
-	((Symbol *)symbol)->frozen = CZ_FALSE;
-	((Symbol *)symbol)->string = strdup(string);
-	Table_insert_(cz, (Object *)cz->symbols, hash, string, symbol);
-	return symbol;
-}
-
-Object *
-Symbol_hash(CzState *cz, Object *self)
-{
-	return (Object *)self->hash;
-}
-
-Object *
-Symbol_equals(CzState *cz, Object *self, Object *other)
-{
-	return (self == other) ? CZ_TRUE : CZ_FALSE;
+	symbol->frozen = CZ_FALSE;
+	symbol->string = strdup(string);
+	Table_insert_(cz, CZ_OBJECT(cz->symbols), hash, string, symbol);
+	return CZ_AS(Object, symbol);
 }
 
 /*
-CzType
-cz_type(Object *obj)
+ * Since no two objects will have the same pointer, the hash values
+ * of objects are just their own pointer values.
+ */
+CzObject *
+Object_hash(CzState *cz)
 {
-	if (CZ_IS_NIL(obj)) {
-		return CZ_TNIL;
-	}
-	if (CZ_IS_BOOL(obj)) {
-		return CZ_TBOOLEAN;
-	}
-	return obj->vt;
+	CzObject *self;
+	self = CZ_POP();
+	CZ_PUSH(self);
+	return CZ_NIL;
 }
-*/
+
+CzObject *
+Object_same(CzState *cz)
+{
+	CzObject *self, *other;
+	self = CZ_POP();
+	other = CZ_POP();
+	CZ_PUSH((self == other) ? CZ_TRUE : CZ_FALSE);
+	return CZ_NIL;
+}
 
 int
 bootstrap(CzState *cz)
@@ -148,29 +146,28 @@ bootstrap(CzState *cz)
 	
 	cz->stack = Stack_new(10);
 	
-	cz->symbols = (Table *)Table_new(cz);
-	cz->strings = (Table *)Table_new(cz);
+	cz->symbols = CZ_AS(Table, Table_create_(cz));
+	cz->strings = CZ_AS(Table, Table_create_(cz));
 	
-	CZ_VTABLE(CZ_T_VTABLE)     = VTable_delegated(cz, 0);
-	CZ_VTABLE(CZ_T_VTABLE)->vt = CZ_VTABLE(CZ_T_VTABLE);
+	CZ_VTABLE(VTable)     = VTable_delegated(cz, 0);
+	CZ_VTABLE(VTable)->vt = CZ_VTABLE(VTable);
 
-	CZ_VTABLE(CZ_T_OBJECT)         = VTable_delegated(cz, 0);
-	CZ_VTABLE(CZ_T_OBJECT)->vt     = CZ_VTABLE(CZ_T_VTABLE);
-	CZ_VTABLE(CZ_T_OBJECT)->parent = CZ_VTABLE(CZ_T_OBJECT);
+	CZ_VTABLE(Object)         = VTable_delegated(cz, 0);
+	CZ_VTABLE(Object)->vt     = CZ_VTABLE(VTable);
 
-	CZ_VTABLE(CZ_T_SYMBOL)    = VTable_delegated(cz, CZ_VTABLE(CZ_T_OBJECT));
-	CZ_VTABLE(CZ_T_WORD)      = VTable_delegated(cz, CZ_VTABLE(CZ_T_OBJECT));
-	CZ_VTABLE(CZ_T_QUOTATION) = VTable_delegated(cz, CZ_VTABLE(CZ_T_OBJECT));
-	CZ_VTABLE(CZ_T_LIST)      = VTable_delegated(cz, CZ_VTABLE(CZ_T_OBJECT));
+	CZ_VTABLE(Symbol)    = VTable_delegated(cz, CZ_VTABLE(Object));
+	CZ_VTABLE(Word)      = VTable_delegated(cz, CZ_VTABLE(Object));
+	CZ_VTABLE(Quotation) = VTable_delegated(cz, CZ_VTABLE(Object));
+	CZ_VTABLE(List)      = VTable_delegated(cz, CZ_VTABLE(Object));
 
-	VTable_add_method(cz, CZ_VTABLE(CZ_T_VTABLE), CZ_SYMBOL("__lookup__"), (Method)VTable_lookup);
-	VTable_add_method(cz, CZ_VTABLE(CZ_T_VTABLE), CZ_SYMBOL("add-method"), (Method)VTable_add_method);
+	VTable_add_method(cz, CZ_VTABLE(VTable), CZ_SYMBOL("__lookup__"), (CzMethod)VTable_lookup);
+	VTable_add_method(cz, CZ_VTABLE(VTable), CZ_SYMBOL("add-method"), (CzMethod)VTable_add_method);
 
-	send(CZ_VTABLE(CZ_T_VTABLE), CZ_SYMBOL("add-method"), CZ_SYMBOL("allocate"),  VTable_allocate);
-	send(CZ_VTABLE(CZ_T_VTABLE), CZ_SYMBOL("add-method"), CZ_SYMBOL("delegated"), VTable_delegated);
+	VTable_add_method(cz, CZ_VTABLE(VTable), CZ_SYMBOL("allocate"), (CzMethod)VTable_allocate);
+	VTable_add_method(cz, CZ_VTABLE(VTable), CZ_SYMBOL("delegated"), (CzMethod)VTable_delegated);
 	
-	send(CZ_VTABLE(CZ_T_SYMBOL), CZ_SYMBOL("add-method"), CZ_SYMBOL("hash"), Symbol_hash);
-	send(CZ_VTABLE(CZ_T_SYMBOL), CZ_SYMBOL("add-method"), CZ_SYMBOL("equals"), Symbol_equals);
+	VTable_add_method(cz, CZ_VTABLE(Object), CZ_SYMBOL("same"), (CzMethod)Object_same);
+	VTable_add_method(cz, CZ_VTABLE(Object), CZ_SYMBOL("equals"), (CzMethod)Object_same);
 	
 	cz_bootstrap_number(cz);
 	

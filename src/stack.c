@@ -8,16 +8,16 @@
 /*
  * Creates a new stack with the specified size.
  */
-Stack *
+CzStack *
 Stack_new(unsigned int size)
 {
-	Stack *s;
-	s = (Stack *)malloc(sizeof(Stack));
+	CzStack *s;
+	s = (CzStack *)GC_MALLOC(sizeof(CzStack));
 	if (s == NULL) {
 		return NULL;
 	}
 	s->top = 0;
-	s->items = (Object **)malloc(sizeof(Object *) * size);
+	s->items = (CzObject **)CZ_CALLOC(sizeof(CzObject *), size);
 	if (s->items == NULL) {
 		return NULL;
 	}
@@ -30,11 +30,10 @@ Stack_new(unsigned int size)
  * Destroys a stack.
  */
 int
-Stack_destroy(Stack *s)
+Stack_destroy(CzStack *s)
 {
 	Stack_reset(s);
-	free(s->items);
-	free(s);
+	GC_FREE(s);
 	return CZ_OK;
 }
 
@@ -43,7 +42,7 @@ Stack_destroy(Stack *s)
  *   anything, because they're just references to nodes.
  */
 int
-Stack_reset(Stack *s)
+Stack_reset(CzStack *s)
 {
 	int i;
 	for (i = 0; i < s->size; i++) {
@@ -54,26 +53,15 @@ Stack_reset(Stack *s)
 }
 
 /*
- * Stack_empty(Stack *s)
- * Returns whether or not the stack is empty.
- * Implemented as a macro in stack.h.
- */
-
-/*
- * Stack_peek(Stack *s)
- * Returns the value at the top of the stack without removing it.
- * Implemented as a macro in stack.h.
- */
-
-/*
  * Pushes an object to the stack. The stack is automatically grown when
  *   necessary.
  */
 int
-Stack_push(Stack *s, Object *obj)
+Stack_push(CzStack *s, CzObject *obj)
 {
 	if ((s->top + 1) > s->size) {
-		s->items = (Object **)realloc(s->items, sizeof(Object *) * s->size * 2);
+		s->size *= 2;
+		s->items = (CzObject **)CZ_REALLOC(s->items, sizeof(CzObject *) * s->size);
 		if (s->items == NULL) {
 			return CZ_ERR;
 		}
@@ -87,12 +75,12 @@ Stack_push(Stack *s, Object *obj)
  * work to Stack_push() so it can take advantage of automatic stack growing.
  */
 int
-Stack_push_bulk(Stack *s, ...)
+Stack_push_bulk(CzStack *s, ...)
 {
 	va_list objs;
 	va_start(objs, s);
 	while (s) {
-		if (Stack_push(s, va_arg(objs, Object *)) == CZ_ERR) {
+		if (Stack_push(s, va_arg(objs, CzObject *)) == CZ_ERR) {
 			return CZ_ERR;
 		}
 	}
@@ -103,19 +91,20 @@ Stack_push_bulk(Stack *s, ...)
 /*
  * Pops an object from the stack.
  */
-Object *
-Stack_pop(Stack *s)
+CzObject *
+Stack_pop(CzStack *s)
 {
 	if (s->top <= 0) {
+		printf("stack underflow\n");
 		return CZ_NIL;
 	}
 	return s->items[--(s->top)];
 }
 
 int
-Stack_swap(Stack *s)
+Stack_swap(CzStack *s)
 {
-	Object *o1, *o2;
+	CzObject *o1, *o2;
 	if (s->top < 1) {
 		return CZ_ERR;
 	}

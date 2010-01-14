@@ -9,7 +9,7 @@ cz_bufio *
 czB_create()
 {
 	cz_bufio *b;
-	if ((b = (cz_bufio *)malloc(sizeof(cz_bufio))) == NULL) {
+	if ((b = (cz_bufio *)GC_MALLOC(sizeof(cz_bufio))) == NULL) {
 		return NULL;
 	}
 	b->fp = NULL;
@@ -48,7 +48,7 @@ czB_destroy(cz_bufio *b)
 	assert(b != NULL);
 	free(b->fp);
 	free(b->buffer);
-	free(b);
+	GC_FREE(b);
 	return CZ_OK;
 }
 

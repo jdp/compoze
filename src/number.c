@@ -5,39 +5,39 @@
  * At the moment, only integers are supported.
  * TODO: Arbitrary precision, floating point.
  */
-Object *
+CzObject *
 Number_create_(CzState *cz, int val)
 {
-	Number *self = (Number *)send(CZ_VTABLE(CZ_T_VTABLE), CZ_SYMBOL("allocate"), sizeof(Number));
-	self->vt     = CZ_VTABLE(CZ_T_NUMBER);
+	CzNumber *self = CZ_MAKE_OBJECT(Number);
 	self->ival   = val;
 	self->hash   = val;
-	return (Object *)self;
+	return CZ_AS(Object, self);
 }
 
 /*
  * Returns the hash value of the number. For the moment, the hash values
  * of numbers are the same as their integer value, like in Python.
  */
-Object *
-Number_hash(CzState *cz, Object *self)
+CzObject *
+Number_hash(CzState *cz, CzObject *self)
 {
-	return (Object *)self->hash;
+	CZ_PUSH(CZ_AS(Object, self->hash));
+	return CZ_NIL;
 }
 
 /*
  * Returns whether or not two numbers are equal to each other.
  */
-Object *
-Number_equals(CzState *cz, Object *self)
+CzObject *
+Number_equals(CzState *cz, CzObject *self)
 {
-	Object *other;
+	CzObject *other;
 	other = CZ_POP();
 	if (self->vt != other->vt) {
 		CZ_PUSH(CZ_FALSE);
 		return CZ_FALSE;
 	}
-	if (((Number *)self)->ival != ((Number *)other)->ival) {
+	if (CZ_AS(Number, self)->ival != CZ_AS(Number, other)->ival) {
 		CZ_PUSH(CZ_FALSE);
 		return CZ_FALSE;
 	}
@@ -51,8 +51,8 @@ Number_equals(CzState *cz, Object *self)
 void
 cz_bootstrap_number(CzState *cz)
 {
-	CZ_VTABLE(CZ_T_NUMBER) = VTable_delegated(cz, CZ_VTABLE(CZ_T_OBJECT));
-	send(CZ_VTABLE(CZ_T_NUMBER), CZ_SYMBOL("add-method"), CZ_SYMBOL("hash"), Number_hash);
-	send(CZ_VTABLE(CZ_T_NUMBER), CZ_SYMBOL("add-method"), CZ_SYMBOL("equals"), Number_equals);
+	CZ_VTABLE(Number) = VTable_delegated(cz, CZ_VTABLE(Object));
+	VTable_add_method(cz, CZ_VTABLE(Number), CZ_SYMBOL("hash"), (CzMethod)Number_hash);
+	VTable_add_method(cz, CZ_VTABLE(Number), CZ_SYMBOL("equals"), (CzMethod)Number_equals);
 }
 
