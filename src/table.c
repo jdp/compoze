@@ -1,7 +1,7 @@
 #include "compoze.h"
 
 /*
- * Credit for primes table: Aaron Krowne
+ * Credit for primes table: Aaron KOBJrowne
  * http://planetmath.org/encyclopedia/GoodHashTablePrimes.html
  */
 static const unsigned int primes[] = {
@@ -14,11 +14,11 @@ static const unsigned int primes[] = {
 	805306457, 1610612741
 };
 
-unsigned int
+OBJ
 djb2_hash(void *key, size_t len)
 {
 	unsigned char *str = key;
-	unsigned int hash = 5381;
+	OBJ hash = 5381;
 	size_t i;
 	for (i = 0; i < len; i++, str++) {
 		hash = ((hash << 5) + hash) + (*str);
@@ -29,28 +29,28 @@ djb2_hash(void *key, size_t len)
 /*
  * Creates a new Pair object.
  */
-CzObject *
-Pair_create_(CzState *cz, CzObject *hash, CzObject *key, CzObject *value)
+OBJ
+Pair_create_(CzState *cz, OBJ hash, OBJ key, OBJ value)
 {
 	CzPair *self   = CZ_MAKE_OBJECT(Pair);
 	self->key_hash = (size_t)hash;
 	self->key      = key;
 	self->value    = value;
-	return CZ_AS(Object, self);
+	return (OBJ)self;
 }
 
 /*
  * Creates a new Table object.
  */
-CzObject *
+OBJ
 Table_create_(CzState *cz)
 {
 	CzTable *self = CZ_MAKE_OBJECT(Table);
 	self->prime   = 0;
 	self->size    = 0;
 	self->cap     = primes[0];
-	self->items   = (CzObject **)CZ_CALLOC(self->cap, sizeof(CzObject *));
-	return CZ_AS(Object, self);
+	self->items   = (OBJ*)CZ_CALLOC(self->cap, sizeof(OBJ));
+	return (OBJ)self;
 }
 
 /*
@@ -58,12 +58,14 @@ Table_create_(CzState *cz)
  * This is super dangerous.
  * Also super useful.
  */
-CzObject *
-Table_insert_(CzState *cz, CzObject *self, size_t hash, void *key, void *value)
+OBJ
+Table_insert_(CzState *cz, OBJ self, OBJ hash, OBJ key, OBJ value)
 {
-	CzObject *pair;
-	pair = Pair_create_(cz, CZ_AS(Object, hash), CZ_AS(Object, key), CZ_AS(Object, value));
+	OBJ pair;
+	//printf("attempting to insert %s\n", CZ_AS(Symbol, key)->string);
+	pair = Pair_create_(cz, (OBJ)hash, (OBJ)key, (OBJ)value);
 	Table_insert_pair_(cz, self, pair);
+	//printf("inserted %s\n", CZ_AS(Symbol, key)->string);
 	return self;
 }
 
@@ -71,8 +73,8 @@ Table_insert_(CzState *cz, CzObject *self, size_t hash, void *key, void *value)
  * Inserts a pair by pre-calculated hash into the table.
  * Reserved mostly for internal use.
  */
-CzObject *
-Table_insert_pair_(CzState *cz, CzObject *self, CzObject *pair)
+OBJ
+Table_insert_pair_(CzState *cz, OBJ self, OBJ pair)
 {
 	CzTable *t;
 	size_t i;
@@ -90,23 +92,23 @@ Table_insert_pair_(CzState *cz, CzObject *self, CzObject *pair)
 /*
  * Grows a table as needed.
  */
-CzObject *
-Table_resize_(CzState *cz, CzObject *self)
+OBJ
+Table_resize_(CzState *cz, OBJ self)
 {
 	CzTable *t;
-	CzObject **new_items;
+	OBJ *new_items;
 	size_t i;
 	
 	t = (CzTable *)self;
 	if ((t->size / t->cap) >= 0.7) {
 		t->cap = primes[++(t->prime)];
 	}
-	new_items = (CzObject **)CZ_CALLOC(t->cap, sizeof(CzObject *));
+	new_items = (OBJ*)CZ_CALLOC(t->cap, sizeof(OBJ));
 	if (new_items == NULL) {
 		t->cap = primes[--(t->prime)];
 		return CZ_NIL;
 	}
-	memset(new_items, 0, t->cap * sizeof(CzObject *));
+	memset(new_items, 0, t->cap * sizeof(OBJ));
 	for (i = 0; i < t->size; i++) {
 		new_items[((size_t)(CZ_AS(Pair, t->items[i])->key_hash) % t->cap)] = t->items[i];
 	} 
@@ -114,8 +116,8 @@ Table_resize_(CzState *cz, CzObject *self)
 	return self;
 }
 
-CzObject *
-Table_lookup_(CzState *cz, CzObject *self, size_t hash, CzObject *key)
+OBJ
+Table_lookup_(CzState *cz, OBJ self, OBJ hash, OBJ key)
 {
 	CzPair *pair;
 	
@@ -134,12 +136,11 @@ Table_lookup_(CzState *cz, CzObject *self, size_t hash, CzObject *key)
  * Associates an object key with a value in the table.
  * ( V K T -- T )
  */
-CzObject *
-Table_insert(CzState *cz)
+OBJ
+Table_insert(CzState *cz, OBJ self)
 {
-	CzObject *self, *key, *value, *hash, *pair;
+	OBJ key, value, hash, pair;
 	
-	self = CZ_POP();
 	key = CZ_POP();
 	value = CZ_POP();
 	
@@ -155,17 +156,16 @@ Table_insert(CzState *cz)
 /*
  * Returns the value associated with the key from the table.
  */
-CzObject *
-Table_lookup(CzState *cz)
+OBJ
+Table_lookup(CzState *cz, OBJ self)
 {
-	CzObject *self, *key, *hash;
+	OBJ key, hash;
 	CzPair *pair;
 	
-	self = CZ_POP();
 	key = CZ_POP();
 
 	hash = send(key, CZ_SYMBOL("hash"));
-	pair = CZ_AS(Pair, CZ_AS(Table, self)->items[(size_t)hash % CZ_AS(Table, self)->cap]);
+	pair = CZ_AS(Pair, CZ_AS(Table, self)->items[hash % CZ_AS(Table, self)->cap]);
 	while (!CZ_IS_NIL(pair)) {
 		if (send(pair->key, CZ_SYMBOL("equals"), key) == CZ_TRUE) {
 			CZ_PUSH(pair->value);
@@ -183,7 +183,7 @@ Table_lookup(CzState *cz)
 void
 cz_bootstrap_table(CzState *cz)
 {
-	CZ_VTABLE(Pair)  = VTable_delegated(cz, CZ_VTABLE(Object));
-	CZ_VTABLE(Table) = VTable_delegated(cz, CZ_VTABLE(Object));
+	CZ_VTABLE(Pair)  = VTable_delegated_(cz, CZ_VTABLE(Object));
+	CZ_VTABLE(Table) = VTable_delegated_(cz, CZ_VTABLE(Object));
 }
 	

@@ -4,7 +4,7 @@
  * ( -- Q )
  * Pushes an empty Quotation object to the stack.
  */
-CzObject *
+OBJ
 Quotation_new(CzState *cz)
 {
 	CzQuotation *self = CZ_MAKE_OBJECT(Quotation);
@@ -12,7 +12,7 @@ Quotation_new(CzState *cz)
 	self->cap   = 0;
 	self->items = NULL;
 	CZ_PUSH(self);
-	return CZ_AS(Object, self);
+	return (OBJ)self;
 }
 
 /*
@@ -21,13 +21,13 @@ Quotation_new(CzState *cz)
  * underneath it. The quotation Q is popped, then the object A is popped, A
  * is appended to Q, and Q is then pushed back onto the stack.
  */
-CzObject *
-Quotation_append(CzState *cz, CzObject *self)
+OBJ
+Quotation_append(CzState *cz, OBJ self)
 {
 	CzQuotation *q = CZ_AS(Quotation, self);
-	CzObject *object = CZ_POP();
+	OBJ object = CZ_POP();
 	if ((q->size + 1) > q->cap) {
-		q->items = (CzObject **)CZ_REALLOC(q->items, sizeof(CzObject *) * (q->cap + 1) * 2);
+		q->items = (OBJ *)CZ_REALLOC(q->items, sizeof(OBJ) * (q->cap + 1) * 2);
 		q->cap = (q->cap + 1) * 2;
 	}
 	q->items[q->size++] = object;
@@ -35,17 +35,17 @@ Quotation_append(CzState *cz, CzObject *self)
 	return object;
 }
 
-CzObject *
-Quotation_at(CzState *cz, CzObject *self)
+OBJ
+Quotation_at(CzState *cz, OBJ self)
 {
-	CzNumber *num = CZ_AS(Number, CZ_POP());
-	CzObject *obj = CZ_AS(Quotation, self)->items[num->ival];
+	OBJ num = CZ_POP();
+	OBJ obj = CZ_AS(Quotation, self)->items[CZ_FIX2INT(num)];
 	CZ_PUSH(obj);
 	return obj;
 }
 
-CzObject *
-Quotation_eval(CzState *cz, CzObject *self)
+OBJ
+Quotation_eval(CzState *cz, OBJ self)
 {
 	int i;
 
@@ -54,11 +54,11 @@ Quotation_eval(CzState *cz, CzObject *self)
 	}
 	
 	for (i = 0; i < CZ_AS(Quotation, self)->size; i++) {
-		if (CZ_IS_PRIMITIVE(CZ_AS(Quotation, self)->items[i])) {
+		if (CZ_IS_IMMEDIATE(CZ_AS(Quotation, self)->items[i])) {
 			CZ_PUSH(CZ_AS(Quotation, self)->items[i]);
 		}
 		else {
-			switch (CZ_AS(Quotation, self)->items[i]->type) {
+			switch (CZ_AS(Object, CZ_AS(Quotation, self)->items[i])->type) {
 				case CZ_T_Symbol:
 					printf("got a symbol %s, %d on stack\n", CZ_AS(Symbol, CZ_AS(Quotation, self)->items[i])->string, cz->stack->top);
 					send2(CZ_AS(Quotation, self)->items[i]);
@@ -79,4 +79,6 @@ cz_bootstrap_quotation(CzState *cz)
 	cz_define_method(Quotation, "new", Quotation_new);
 	cz_define_method(Quotation, "at", Quotation_at);
 	cz_define_method(Quotation, "eval", Quotation_eval);
+	
+	
 }

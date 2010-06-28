@@ -38,7 +38,7 @@ Parser_destroy(Parser *p)
 int
 Parser_parse(Parser *p, CzState *cz, Lexer *l)
 {
-	CzObject *o;
+	OBJ o;
 	//int in_def = 0;
 	int token, qdepth = 0;
 	   
@@ -75,7 +75,7 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 				
 			/* Add a number to the quotation */
 			case T_NUMBER:
-				o = Number_create_(cz, atoi(l->buffer));
+				o = CZ_INT2FIX(atoi(l->buffer));
 				CZ_PUSH(o);
 				Stack_swap(cz->stack);
 				Quotation_append(cz, CZ_POP());
@@ -99,7 +99,7 @@ cz_tree(CzState *cz, CzQuotation *q, int depth)
 {
 	int i;
 	for (i = 0; i < q->size; i++) {
-		if (q->items[i]->type == CZ_T_Quotation) {
+		if (CZ_AS(Object, q->items[i])->type == CZ_T_Quotation) {
 			printf("[ ");
 			cz_tree(cz, CZ_AS(Quotation, q->items[i]), depth+1);
 			printf("] ");

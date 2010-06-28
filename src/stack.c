@@ -17,7 +17,7 @@ Stack_new(unsigned int size)
 		return NULL;
 	}
 	s->top = 0;
-	s->items = (CzObject **)CZ_CALLOC(sizeof(CzObject *), size);
+	s->items = (OBJ *)CZ_CALLOC(sizeof(OBJ), size);
 	if (s->items == NULL) {
 		return NULL;
 	}
@@ -57,11 +57,11 @@ Stack_reset(CzStack *s)
  *   necessary.
  */
 int
-Stack_push(CzStack *s, CzObject *obj)
+Stack_push(CzStack *s, OBJ obj)
 {
 	if ((s->top + 1) > s->size) {
 		s->size *= 2;
-		s->items = (CzObject **)CZ_REALLOC(s->items, sizeof(CzObject *) * s->size);
+		s->items = (OBJ *)CZ_REALLOC(s->items, sizeof(OBJ) * s->size);
 		if (s->items == NULL) {
 			return CZ_ERR;
 		}
@@ -80,7 +80,7 @@ Stack_push_bulk(CzStack *s, ...)
 	va_list objs;
 	va_start(objs, s);
 	while (s) {
-		if (Stack_push(s, va_arg(objs, CzObject *)) == CZ_ERR) {
+		if (Stack_push(s, va_arg(objs, OBJ)) == CZ_ERR) {
 			return CZ_ERR;
 		}
 	}
@@ -91,7 +91,7 @@ Stack_push_bulk(CzStack *s, ...)
 /*
  * Pops an object from the stack.
  */
-CzObject *
+OBJ
 Stack_pop(CzStack *s)
 {
 	if (s->top < 0) {
@@ -104,7 +104,7 @@ Stack_pop(CzStack *s)
 int
 Stack_swap(CzStack *s)
 {
-	CzObject *o1, *o2;
+	OBJ o1, o2;
 	if (s->top < 1) {
 		return CZ_ERR;
 	}

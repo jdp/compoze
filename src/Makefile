@@ -3,7 +3,6 @@ SRC = bufio.c \
       parser.c \
       object.c \
       stack.c \
-      number.c \
       table.c \
       quotation.c \
       main.c

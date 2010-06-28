@@ -18,7 +18,7 @@ repl(void)
 	cz_bufio *buf;
 	Lexer *lex;
 	Parser *par;
-	CzObject *o;
+	OBJ o;
 	
 	GC_INIT();
 	
@@ -46,11 +46,11 @@ repl(void)
 			else if (o == CZ_FALSE) {
 				printf("false ");
 			}
-			else if (o->type == CZ_T_Number) {
-					printf("%d ", CZ_AS(Number, o)->ival);
+			else if (CZ_IS_FIXNUM(o)) {
+					printf("%d ", CZ_FIX2INT(o));
 			}
 			else {
-				printf("%d:W ", o->type);
+				printf("%d:W ", CZ_AS(Object, o)->type);
 			}
 		}
 		printf("\n");
