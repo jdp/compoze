@@ -83,13 +83,22 @@ CzMethod
 bind(CzState *cz, CzObject *rcv, CzObject *msg)
 {
 	CzMethod m;
-	CzVTable *vt = rcv->vt;
+	CzVTable *vt;
+	
+	printf("sending %p to %p\n", msg, rcv);
 	
 	/*
 	m = ((msg == CZ_SYMBOL("__lookup__")) && (rcv == CZ_AS(Object, CZ_VTABLE(VTable))))
       ? (CzMethod)VTable_lookup(cz, vt, msg)
       : (CzMethod)send(vt, CZ_SYMBOL("__lookup__"), msg);
     */
+	if (CZ_IS_PRIMITIVE(rcv)) {
+		printf("using object vtable for %p->%p\n", msg, rcv);
+		vt = CZ_VTABLE(Object);
+	}
+	else {
+		vt = rcv->vt;
+	}
     m = (CzMethod)VTable_lookup(cz, vt, msg);
 	return m;
 }
@@ -116,24 +125,45 @@ Symbol_intern(CzState *cz, char *string)
 	return CZ_AS(Object, symbol);
 }
 
+CzObject *
+Object_true(CzState *cz, CzObject *self)
+{
+	CZ_PUSH(self);
+	CZ_PUSH(CZ_TRUE);
+	return CZ_NIL;
+}
+
+CzObject *
+Object_false(CzState *cz, CzObject *self)
+{
+	CZ_PUSH(self);
+	CZ_PUSH(CZ_FALSE);
+	return CZ_NIL;
+}
+
+CzObject *
+Object_nil(CzState *cz, CzObject *self)
+{
+	CZ_PUSH(self);
+	CZ_PUSH(CZ_NIL);
+	return CZ_NIL;
+}
+
 /*
  * Since no two objects will have the same pointer, the hash values
  * of objects are just their own pointer values.
  */
 CzObject *
-Object_hash(CzState *cz)
+Object_hash(CzState *cz, CzObject *self)
 {
-	CzObject *self;
-	self = CZ_POP();
 	CZ_PUSH(self);
 	return CZ_NIL;
 }
 
 CzObject *
-Object_same(CzState *cz)
+Object_same(CzState *cz, CzObject *self)
 {
-	CzObject *self, *other;
-	self = CZ_POP();
+	CzObject *other;
 	other = CZ_POP();
 	CZ_PUSH((self == other) ? CZ_TRUE : CZ_FALSE);
 	return CZ_NIL;
@@ -152,22 +182,19 @@ bootstrap(CzState *cz)
 	CZ_VTABLE(VTable)     = VTable_delegated(cz, 0);
 	CZ_VTABLE(VTable)->vt = CZ_VTABLE(VTable);
 
-	CZ_VTABLE(Object)         = VTable_delegated(cz, 0);
-	CZ_VTABLE(Object)->vt     = CZ_VTABLE(VTable);
+	CZ_VTABLE(Object)     = VTable_delegated(cz, 0);
+	CZ_VTABLE(Object)->vt = CZ_VTABLE(VTable);
 
 	CZ_VTABLE(Symbol)    = VTable_delegated(cz, CZ_VTABLE(Object));
 	CZ_VTABLE(Word)      = VTable_delegated(cz, CZ_VTABLE(Object));
 	CZ_VTABLE(Quotation) = VTable_delegated(cz, CZ_VTABLE(Object));
 	CZ_VTABLE(List)      = VTable_delegated(cz, CZ_VTABLE(Object));
-
-	VTable_add_method(cz, CZ_VTABLE(VTable), CZ_SYMBOL("__lookup__"), (CzMethod)VTable_lookup);
-	VTable_add_method(cz, CZ_VTABLE(VTable), CZ_SYMBOL("add-method"), (CzMethod)VTable_add_method);
-
-	VTable_add_method(cz, CZ_VTABLE(VTable), CZ_SYMBOL("allocate"), (CzMethod)VTable_allocate);
-	VTable_add_method(cz, CZ_VTABLE(VTable), CZ_SYMBOL("delegated"), (CzMethod)VTable_delegated);
 	
-	VTable_add_method(cz, CZ_VTABLE(Object), CZ_SYMBOL("same"), (CzMethod)Object_same);
-	VTable_add_method(cz, CZ_VTABLE(Object), CZ_SYMBOL("equals"), (CzMethod)Object_same);
+	cz_define_method(Object, "true", Object_true);
+	cz_define_method(Object, "false", Object_false);
+	cz_define_method(Object, "nil", Object_nil);
+	cz_define_method(Object, "same", Object_same);
+	cz_define_method(Object, "equals", Object_same);
 	
 	cz_bootstrap_number(cz);
 	cz_bootstrap_table(cz);

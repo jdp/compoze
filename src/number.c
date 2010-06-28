@@ -21,7 +21,7 @@ Number_create_(CzState *cz, int val)
 CzObject *
 Number_hash(CzState *cz, CzObject *self)
 {
-	CZ_PUSH(CZ_AS(Object, self->hash));
+	CZ_PUSH(self);
 	return CZ_NIL;
 }
 
@@ -52,7 +52,7 @@ void
 cz_bootstrap_number(CzState *cz)
 {
 	CZ_VTABLE(Number) = VTable_delegated(cz, CZ_VTABLE(Object));
-	VTable_add_method(cz, CZ_VTABLE(Number), CZ_SYMBOL("hash"), (CzMethod)Number_hash);
-	VTable_add_method(cz, CZ_VTABLE(Number), CZ_SYMBOL("equals"), (CzMethod)Number_equals);
+	cz_define_method(Number, "hash", Number_hash);
+	cz_define_method(Number, "equals", Number_equals);
 }
 

@@ -94,7 +94,7 @@ Stack_push_bulk(CzStack *s, ...)
 CzObject *
 Stack_pop(CzStack *s)
 {
-	if (s->top <= 0) {
+	if (s->top < 0) {
 		printf("stack underflow\n");
 		return CZ_NIL;
 	}

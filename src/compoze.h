@@ -162,6 +162,8 @@ typedef struct cz_state
 	struct cz_stack *stack;
 } CzState;
 
+#define cz_define_method(T, S, M) VTable_add_method(cz, CZ_VTABLE(T), CZ_SYMBOL(S), (CzMethod)M)
+
 #define send(RCV, MSG, ARGS...) ({                   \
 	struct cz_object *r = (struct cz_object *)(RCV); \
 	cz_methodfn       m = bind(cz, r, (MSG));        \
@@ -173,9 +175,12 @@ typedef struct cz_state
 
 #define send2(MSG) ({ \
 	struct cz_object *r = Stack_pop(cz->stack); \
-	cz_methodfn m = bind(cz, r, (MSG)); \
-	if (!CZ_IS_PRIMITIVE(m)) { \
+	cz_methodfn       m = bind(cz, r, (MSG)); \
+	if (CZ_AS(Object, m) != CZ_UNDEFINED) { \
 		m(cz, r); \
+	} \
+	else { \
+		printf("object does not respond to message\n"); \
 	} \
 })
 
@@ -211,10 +216,19 @@ CzObject *
 Symbol_intern(CzState *, char *);
 
 CzObject *
-Object_hash(CzState *);
+Object_true(CzState *, CzObject *);
 
 CzObject *
-Object_same(CzState *);
+Object_false(CzState *, CzObject *);
+
+CzObject *
+Object_nil(CzState *, CzObject *);
+
+CzObject *
+Object_hash(CzState *, CzObject *);
+
+CzObject *
+Object_same(CzState *, CzObject *self);
 
 /* Stacks */
 

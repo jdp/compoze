@@ -60,6 +60,7 @@ Quotation_eval(CzState *cz, CzObject *self)
 		else {
 			switch (CZ_AS(Quotation, self)->items[i]->type) {
 				case CZ_T_Symbol:
+					printf("got a symbol %s, %d on stack\n", CZ_AS(Symbol, CZ_AS(Quotation, self)->items[i])->string, cz->stack->top);
 					send2(CZ_AS(Quotation, self)->items[i]);
 					break;
 				default:
@@ -71,8 +72,6 @@ Quotation_eval(CzState *cz, CzObject *self)
 	
 	return CZ_NIL;
 }
-
-#define cz_define_method(T, S, M) VTable_add_method(cz, CZ_VTABLE(T), CZ_SYMBOL(S), (CzMethod)M)
 
 void
 cz_bootstrap_quotation(CzState *cz)

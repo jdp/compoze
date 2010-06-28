@@ -151,6 +151,9 @@ Lexer_scan(Lexer *l)
 				scan_signature(l);
 				next(l);
 				break;
+			case '\'':
+				next(l);
+				return T_FREEZE;
 			case ':':
 				next(l);
 				return T_BDEF;

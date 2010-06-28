@@ -2,7 +2,7 @@
 #define LEXER_H
 
 #define MAX_SIZET ((size_t)(~(size_t)0)-2)
-#define DELIM "()[]:;"
+#define DELIM "()[]:;'"
 
 enum
 {
@@ -11,6 +11,7 @@ enum
 	T_NUMBER,
 	T_STRING,
 	T_WORD,
+	T_FREEZE,
 	T_BQUOTE,
 	T_EQUOTE,
 	T_BDEF,
