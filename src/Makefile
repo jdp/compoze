@@ -2,8 +2,9 @@ SRC = bufio.c \
       lexer.c \
       parser.c \
       object.c \
-      table.c \
       number.c \
+      string.c \
+      table.c \
       quotation.c \
       main.c
 OBJ = ${SRC:.c=.o}

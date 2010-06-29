@@ -90,40 +90,9 @@ bind(CzState *cz, OBJ rcv, OBJ msg)
       ? (CzMethod)VTable_lookup(cz, vt, msg)
       : (CzMethod)send(vt, CZ_SYMBOL("__lookup__"), msg);
     */
-	if (CZ_IS_FIXNUM(rcv)) {
-		vt = CZ_VTABLE(Fixnum);
-	}
-	else if (CZ_IS_IMMEDIATE(rcv)) {
-		vt = CZ_VTABLE(Object);
-	}
-	else {
-		vt = CZ_AS(Object, rcv)->vt;
-	}
+	vt = CZ_PROTO(rcv);
     m = (CzMethod)VTable_lookup_(cz, vt, msg);
 	return (OBJ)m;
-}
-
-OBJ
-Symbol_intern(CzState *cz, char *string)
-{
-	CzSymbol *symbol;
-	CzPair *pair;
-	OBJ hash;
-	
-	hash = djb2_hash(string, strlen(string));
-	pair = CZ_AS(Pair, cz->symbols->items[hash % cz->symbols->cap]);
-	while (!CZ_IS_NIL(pair)) {
-		if (strcmp((char *)pair->key, string) == 0) {
-			return pair->value;
-		}
-		pair = pair->next;
-	}
-	symbol = CZ_MAKE_OBJECT(Symbol);
-	symbol->hash = hash;
-	symbol->frozen = CZ_FALSE;
-	symbol->string = strdup(string);
-	Table_insert_(cz, (OBJ)cz->symbols, hash, (OBJ)string, (OBJ)symbol);
-	return (OBJ)symbol;
 }
 
 OBJ
@@ -170,6 +139,41 @@ Object_same(CzState *cz, OBJ self)
 	return CZ_NIL;
 }
 
+OBJ
+Object_dup(CzState *cz, OBJ self)
+{
+	CZ_PUSH(self);
+	CZ_PUSH(self);
+	return self;
+}
+
+OBJ
+Object_swap(CzState *cz, OBJ self)
+{
+	OBJ other;
+	other = CZ_POP();
+	CZ_PUSH(self);
+	CZ_PUSH(other);
+	return self;
+}
+
+CzType
+cz_proto_id(OBJ object)
+{
+	switch (object) {
+		case CZ_NIL:
+			return CZ_T_Nil;
+		case CZ_TRUE:
+			return CZ_T_True;
+		case CZ_FALSE:
+			return CZ_T_False;
+	}
+	if (CZ_IS_FIXNUM(object)) {
+		return CZ_T_Fixnum;
+	}
+	return CZ_AS(Object, object)->type;
+}
+
 int
 bootstrap(CzState *cz)
 {
@@ -185,21 +189,27 @@ bootstrap(CzState *cz)
 
 	CZ_VTABLE(Object)     = VTable_delegated_(cz, 0);
 	CZ_VTABLE(Object)->vt = CZ_VTABLE(VTable);
-
+	
+	CZ_VTABLE(Nil)       = VTable_delegated_(cz, CZ_VTABLE(Object));
+	CZ_VTABLE(True)      = VTable_delegated_(cz, CZ_VTABLE(Object));
+	CZ_VTABLE(False)     = VTable_delegated_(cz, CZ_VTABLE(Object));
 	CZ_VTABLE(Symbol)    = VTable_delegated_(cz, CZ_VTABLE(Object));
 	CZ_VTABLE(Word)      = VTable_delegated_(cz, CZ_VTABLE(Object));
 	CZ_VTABLE(Quotation) = VTable_delegated_(cz, CZ_VTABLE(Object));
 	
-	cz_define_method(Object, "true", Object_true);
-	cz_define_method(Object, "false", Object_false);
-	cz_define_method(Object, "nil", Object_nil);
-	cz_define_method(Object, "same", Object_same);
+	cz_define_method(Object,   "true", Object_true);
+	cz_define_method(Object,  "false", Object_false);
+	cz_define_method(Object,    "nil", Object_nil);
+	cz_define_method(Object,   "same", Object_same);
 	cz_define_method(Object, "equals", Object_same);
-	cz_define_method(Object, "=", Object_same);
+	cz_define_method(Object,      "=", Object_same);
+	cz_define_method(Object,    "dup", Object_dup);
+	cz_define_method(Object,   "swap", Object_swap);
 	
 	cz_bootstrap_table(cz);
 	cz_bootstrap_quotation(cz);
 	cz_bootstrap_fixnum(cz);
+	cz_bootstrap_string(cz);
 	
 	printf("straps booted.\n");
 	

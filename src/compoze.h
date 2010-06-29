@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
 #include <gc/gc.h>
@@ -34,7 +35,8 @@ typedef cz_methodfn CzMethod;
 typedef enum
 {
 	CZ_T_Nil,
-	CZ_T_Boolean,
+	CZ_T_True,
+	CZ_T_False,
 	CZ_T_VTable,
 	CZ_T_Object,
 	CZ_T_Symbol,
@@ -44,6 +46,7 @@ typedef enum
 	CZ_T_Pair,
 	CZ_T_Table,
 	CZ_T_Quotation,
+	CZ_T_Error,
 	CZ_T_User,
 	CZ_T_MAX
 } CzType;
@@ -61,6 +64,8 @@ typedef enum
 #define CZ_BOOL(o)         ((o) ? CZ_TRUE : CZ_FALSE)
 
 #define CZ_VTABLE(T)    (cz->vtables[CZ_T_##T])
+#define CZ_PROTO(O)     (CZ_IS_IMMEDIATE(O) ? cz->vtables[cz_proto_id(O)] : CZ_AS(Object, O)->vt)
+#define CZ_IS(T,O)      (cz_proto_id(O) == CZ_T_##T)
 
 #define CZ_OBJECT_HEADER     \
 	int               type;  \
@@ -75,7 +80,7 @@ typedef enum
 })
 
 #define CZ_AS(T,O)      ((Cz##T *)(O))
-#define CZ_SYMBOL(s)    (Symbol_intern(cz, s))
+#define CZ_SYMBOL(s)    (Symbol_intern_(cz, s))
 
 typedef struct cz_vtable
 {
@@ -92,9 +97,11 @@ typedef struct cz_object
 typedef struct cz_symbol
 {
 	CZ_OBJECT_HEADER
-	char *string;
-	OBJ   frozen;
+	char   *string;
+	size_t  len;
+	OBJ     frozen;
 } CzSymbol;
+typedef CzSymbol CzString;
 
 typedef struct cz_pair
 {
@@ -140,6 +147,7 @@ typedef struct cz_state
 		printf("what the fuck %lu!!!\n", m); \
 	} \
 	((CzMethod)m)(cz, r, ##ARGS); \
+	CZ_POP(); \
 })
 
 #define send2(MSG) ({ \
@@ -158,8 +166,11 @@ typedef struct cz_state
 #define CZ_POP()   (Quotation_pop_(cz, cz->stack))
 #define CZ_PEEK(s) (CZ_AS(Quotation, s)->items[CZ_AS(Quotation, s)->size-1])
 
-OBJ
-djb2_hash(void *, size_t);
+OBJ djb2_hash(void *, size_t);
+
+/* Helper functions */
+
+CzType cz_proto_id(OBJ);
 
 /* Objects */
 
@@ -185,9 +196,6 @@ OBJ
 bind(CzState *, OBJ, OBJ);
 
 OBJ
-Symbol_intern(CzState *, char *);
-
-OBJ
 Object_true(CzState *, OBJ);
 
 OBJ
@@ -201,6 +209,14 @@ Object_hash(CzState *, OBJ);
 
 OBJ
 Object_same(CzState *, OBJ);
+
+/* Strings */
+
+OBJ Symbol_intern_(CzState *, char *);
+OBJ String_create_(CzState *, const char *, size_t);
+OBJ String_create2_(CzState *, const char *);
+OBJ cz_sprintf(CzState *, const char *, ...);
+void cz_bootstrap_string(CzState *);
 
 /* Tables */
 

@@ -67,7 +67,7 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 				
 			/* Add a word to the quotation, as a symbol */
 			case T_WORD:
-				o = Symbol_intern(cz, l->buffer);
+				o = Symbol_intern_(cz, l->buffer);
 				CZ_PUSH(o);
 				Quotation_swap_(cz, cz->stack);
 				Quotation_push(cz, CZ_POP());
@@ -97,7 +97,6 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 void
 cz_tree(CzState *cz, CzQuotation *q, int depth)
 {
-	printf("Stack size: %lu\n", q->size);
 	int i;
 	for (i = 0; i < q->size; i++) {
 		if (q->items[i] == CZ_NIL) {
@@ -112,13 +111,19 @@ cz_tree(CzState *cz, CzQuotation *q, int depth)
 		else if (CZ_IS_FIXNUM(q->items[i])) {
 			printf("%d ", CZ_FIX2INT(q->items[i]));
 		}
-		else if (CZ_AS(Object, q->items[i])->type == CZ_T_Quotation) {
+		else if (CZ_IS(String, q->items[i])) {
+			printf("\"%s\" ", CZ_AS(String, q->items[i])->string);
+		}
+		else if (CZ_IS(Symbol, q->items[i])) {
+			printf("%s ", CZ_AS(Symbol, q->items[i])->string);
+		}
+		else if (CZ_IS(Quotation, q->items[i])) {
 			printf("[ ");
 			cz_tree(cz, CZ_AS(Quotation, q->items[i]), depth+1);
 			printf("] ");
 		}
 		else {
-			printf("W ");
+			printf("W:%d", cz_proto_id(q->items[i]));
 		}
 	}
 }

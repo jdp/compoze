@@ -21,6 +21,15 @@ Fixnum_subtract(CzState *cz, OBJ self)
 	return CZ_NIL;
 }
 
+OBJ
+Fixnum_to_string(CzState *cz, OBJ self)
+{
+	OBJ str;
+	str = cz_sprintf(cz, "%d", CZ_FIX2INT(self));
+	CZ_PUSH(str);
+	return str;
+}
+
 /*
  * Bootstraps the Fixnum type
  */
@@ -32,5 +41,6 @@ cz_bootstrap_fixnum(CzState *cz)
 	cz_define_method(Fixnum, "+", Fixnum_add);
 	cz_define_method(Fixnum, "sub", Fixnum_subtract);
 	cz_define_method(Fixnum, "-", Fixnum_subtract);
+	cz_define_method(Fixnum, "to-string", Fixnum_to_string);
 }
 

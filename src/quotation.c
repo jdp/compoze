@@ -65,6 +65,32 @@ Quotation_push(CzState *cz, OBJ self)
 }
 
 OBJ
+Quotation_if(CzState *cz, OBJ self)
+{
+	OBJ other, cond;
+	other = CZ_POP();
+	cond = CZ_POP();
+	CZ_PUSH((cond == CZ_TRUE) ? self : other);
+	Quotation_eval(cz, CZ_POP());
+	return self;
+}
+
+OBJ
+Quotation_loop(CzState *cz, OBJ self)
+{
+	OBJ cond;
+	while (1) {
+		CZ_PUSH(self);
+		Quotation_eval(cz, CZ_POP());
+		cond = CZ_POP();
+		if (cond == CZ_FALSE) {
+			break;
+		}
+	}
+	return self;
+}
+
+OBJ
 Quotation_eval(CzState *cz, OBJ self)
 {
 	int i;
@@ -96,6 +122,8 @@ void
 cz_bootstrap_quotation(CzState *cz)
 {
 	cz_define_method(Quotation, "at", Quotation_at);
-	cz_define_method(Quotation, "i", Quotation_eval);
+	cz_define_method(Quotation, "call", Quotation_eval);
 	cz_define_method(Quotation, "push", Quotation_push);
+	cz_define_method(Quotation, "if", Quotation_if);
+	cz_define_method(Quotation, "loop", Quotation_loop);
 }
