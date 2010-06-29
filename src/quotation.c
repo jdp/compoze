@@ -1,38 +1,48 @@
 #include "compoze.h"
 
-/*
- * ( -- Q )
- * Pushes an empty Quotation object to the stack.
- */
 OBJ
-Quotation_new(CzState *cz)
+Quotation_create_(CzState *cz)
 {
-	CzQuotation *self = CZ_MAKE_OBJECT(Quotation);
-	self->size  = 0;
-	self->cap   = 0;
-	self->items = NULL;
-	CZ_PUSH(self);
+	CzQuotation *q = CZ_MAKE_OBJECT(Quotation);
+	q->size  = 0;
+	q->cap   = 0;
+	q->items = NULL;
+	return (OBJ)q;
+}
+
+OBJ
+Quotation_push_(CzState *cz, CzQuotation *self, OBJ object)
+{
+	if ((self->size + 1) > self->cap) {
+		self->items = (OBJ *)CZ_REALLOC(self->items, sizeof(OBJ) * (self->cap + 1) * 2);
+		self->cap = (self->cap + 1) * 2;
+	}
+	self->items[self->size++] = object;
 	return (OBJ)self;
 }
 
-/*
- * ( A Q -- Q )
- * Expects a quotation object atop the stack, and then any object type
- * underneath it. The quotation Q is popped, then the object A is popped, A
- * is appended to Q, and Q is then pushed back onto the stack.
- */
 OBJ
-Quotation_append(CzState *cz, OBJ self)
+Quotation_pop_(CzState *cz, CzQuotation *self)
 {
-	CzQuotation *q = CZ_AS(Quotation, self);
-	OBJ object = CZ_POP();
-	if ((q->size + 1) > q->cap) {
-		q->items = (OBJ *)CZ_REALLOC(q->items, sizeof(OBJ) * (q->cap + 1) * 2);
-		q->cap = (q->cap + 1) * 2;
+	if (self->size <= 0) {
+		printf("stack underflow\n");
+		return CZ_UNDEFINED;
 	}
-	q->items[q->size++] = object;
-	CZ_PUSH(q);
-	return object;
+	return self->items[--(self->size)];
+}
+
+OBJ
+Quotation_swap_(CzState *cz, CzQuotation *self)
+{
+	OBJ o1, o2;
+	if (self->size < 2) {
+		return CZ_UNDEFINED;
+	}
+	o1 = Quotation_pop_(cz, self);
+	o2 = Quotation_pop_(cz, self);
+	Quotation_push_(cz, self, o1);
+	Quotation_push_(cz, self, o2);
+	return (OBJ)self;
 }
 
 OBJ
@@ -42,6 +52,16 @@ Quotation_at(CzState *cz, OBJ self)
 	OBJ obj = CZ_AS(Quotation, self)->items[CZ_FIX2INT(num)];
 	CZ_PUSH(obj);
 	return obj;
+}
+
+OBJ
+Quotation_push(CzState *cz, OBJ self)
+{
+	OBJ other;
+	other = CZ_POP();
+	Quotation_push_(cz, CZ_AS(Quotation, self), other);
+	CZ_PUSH(self);
+	return self;
 }
 
 OBJ
@@ -60,7 +80,6 @@ Quotation_eval(CzState *cz, OBJ self)
 		else {
 			switch (CZ_AS(Object, CZ_AS(Quotation, self)->items[i])->type) {
 				case CZ_T_Symbol:
-					printf("got a symbol %s, %d on stack\n", CZ_AS(Symbol, CZ_AS(Quotation, self)->items[i])->string, cz->stack->top);
 					send2(CZ_AS(Quotation, self)->items[i]);
 					break;
 				default:
@@ -76,9 +95,7 @@ Quotation_eval(CzState *cz, OBJ self)
 void
 cz_bootstrap_quotation(CzState *cz)
 {
-	cz_define_method(Quotation, "new", Quotation_new);
 	cz_define_method(Quotation, "at", Quotation_at);
-	cz_define_method(Quotation, "eval", Quotation_eval);
-	
-	
+	cz_define_method(Quotation, "i", Quotation_eval);
+	cz_define_method(Quotation, "push", Quotation_push);
 }

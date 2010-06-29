@@ -90,7 +90,10 @@ bind(CzState *cz, OBJ rcv, OBJ msg)
       ? (CzMethod)VTable_lookup(cz, vt, msg)
       : (CzMethod)send(vt, CZ_SYMBOL("__lookup__"), msg);
     */
-	if (CZ_IS_IMMEDIATE(rcv)) {
+	if (CZ_IS_FIXNUM(rcv)) {
+		vt = CZ_VTABLE(Fixnum);
+	}
+	else if (CZ_IS_IMMEDIATE(rcv)) {
 		vt = CZ_VTABLE(Object);
 	}
 	else {
@@ -172,7 +175,7 @@ bootstrap(CzState *cz)
 {
 	printf("booting straps...\n");
 	
-	cz->stack = Stack_new(10);
+	cz->stack = CZ_AS(Quotation, Quotation_create_(cz));
 	
 	cz->symbols = CZ_AS(Table, Table_create_(cz));
 	cz->strings = CZ_AS(Table, Table_create_(cz));
@@ -192,9 +195,11 @@ bootstrap(CzState *cz)
 	cz_define_method(Object, "nil", Object_nil);
 	cz_define_method(Object, "same", Object_same);
 	cz_define_method(Object, "equals", Object_same);
+	cz_define_method(Object, "=", Object_same);
 	
 	cz_bootstrap_table(cz);
 	cz_bootstrap_quotation(cz);
+	cz_bootstrap_fixnum(cz);
 	
 	printf("straps booted.\n");
 	

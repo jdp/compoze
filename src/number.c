@@ -1,58 +1,39 @@
 #include "compoze.h"
 
-/*
- * Returns an instance of a number.
- * At the moment, only integers are supported.
- * TODO: Arbitrary precision, floating point.
- */
-CzObject *
-Number_create_(CzState *cz, int val)
-{
-	CzNumber *self = CZ_MAKE_OBJECT(Number);
-	self->ival   = val;
-	self->hash   = val;
-	return CZ_AS(Object, self);
-}
+#define MATH(A,OP,B) CZ_INT2FIX(CZ_FIX2INT(A) OP CZ_FIX2INT(B))
+#define CMP(A,OP,B)  CZ_BOOL(CZ_FIX2INT(A) OP CZ_FIX2INT(B))
 
-/*
- * Returns the hash value of the number. For the moment, the hash values
- * of numbers are the same as their integer value, like in Python.
- */
-CzObject *
-Number_hash(CzState *cz, CzObject *self)
+OBJ
+Fixnum_add(CzState *cz, OBJ self)
 {
-	CZ_PUSH(self);
+	OBJ other;
+	
+	other = CZ_POP();
+	CZ_PUSH(MATH(self, +, other));
 	return CZ_NIL;
 }
 
-/*
- * Returns whether or not two numbers are equal to each other.
- */
-CzObject *
-Number_equals(CzState *cz, CzObject *self)
+OBJ
+Fixnum_subtract(CzState *cz, OBJ self)
 {
-	CzObject *other;
+	OBJ other;
+	
 	other = CZ_POP();
-	if (self->vt != other->vt) {
-		CZ_PUSH(CZ_FALSE);
-		return CZ_FALSE;
-	}
-	if (CZ_AS(Number, self)->ival != CZ_AS(Number, other)->ival) {
-		CZ_PUSH(CZ_FALSE);
-		return CZ_FALSE;
-	}
-	CZ_PUSH(CZ_TRUE);
-	return CZ_TRUE;
+	CZ_PUSH(MATH(self, -, other));
+	return CZ_NIL;
 }
 
+
 /*
- * Bootstraps the Number kind
+ * Bootstraps the Fixnum type
  */
 void
-cz_bootstrap_number(CzState *cz)
+cz_bootstrap_fixnum(CzState *cz)
 {
-	CZ_VTABLE(Number) = VTable_delegated(cz, CZ_VTABLE(Object));
-	cz_define_method(Number, "hash", Number_hash);
-	cz_define_method(Number, "equals", Number_equals);
+	CZ_VTABLE(Fixnum) = VTable_delegated_(cz, CZ_VTABLE(Object));
+	cz_define_method(Fixnum, "add", Fixnum_add);
+	cz_define_method(Fixnum, "+", Fixnum_add);
+	cz_define_method(Fixnum, "subtract", Fixnum_subtract);
+	cz_define_method(Fixnum, "-", Fixnum_subtract);
 }
 

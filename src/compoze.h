@@ -39,7 +39,7 @@ typedef enum
 	CZ_T_Object,
 	CZ_T_Symbol,
 	CZ_T_Word,
-	CZ_T_Number,
+	CZ_T_Fixnum,
 	CZ_T_String,
 	CZ_T_Pair,
 	CZ_T_Table,
@@ -58,6 +58,7 @@ typedef enum
 #define CZ_IS_NIL(o)       ((OBJ)(o) == CZ_NIL)
 #define CZ_IS_BOOL(o)      (((OBJ)(o) & 3) == 2)
 #define CZ_IS_IMMEDIATE(o) (o == CZ_NIL || o == CZ_UNDEFINED || CZ_IS_BOOL(o) || CZ_IS_FIXNUM(o))
+#define CZ_BOOL(o)         ((o) ? CZ_TRUE : CZ_FALSE)
 
 #define CZ_VTABLE(T)    (cz->vtables[CZ_T_##T])
 
@@ -122,46 +123,40 @@ typedef struct cz_quotation
 	OBJ *items;
 } CzQuotation;
 
-typedef struct cz_stack
-{
-	CZ_OBJECT_HEADER
-	int top;
-	int size;
-	OBJ *items;
-} CzStack;
-
 typedef struct cz_state
 {
 	CZ_OBJECT_HEADER
 	struct cz_vtable *vtables[CZ_T_MAX];
 	struct cz_table *symbols, *strings;
-	struct cz_stack *stack;
+	struct cz_quotation *stack;
 } CzState;
 
 #define cz_define_method(T, S, M) VTable_add_method_(cz, CZ_VTABLE(T), CZ_SYMBOL(S), (CzMethod)M)
 
-#define send(RCV, MSG, ARGS...) ({                   \
+#define send(RCV, MSG, ARGS...) ({ \
 	OBJ r = (OBJ)(RCV); \
-	OBJ m = bind(cz, r, (MSG));        \
-	if (CZ_IS_IMMEDIATE(m)) {                        \
-		printf("what the fuck %lu!!!\n", m);          \
-	}                                                \
-	((CzMethod)m)(cz, r, ##ARGS);                                \
+	OBJ m = bind(cz, r, (MSG)); \
+	if (CZ_IS_IMMEDIATE(m)) { \
+		printf("what the fuck %lu!!!\n", m); \
+	} \
+	((CzMethod)m)(cz, r, ##ARGS); \
 })
 
 #define send2(MSG) ({ \
-	OBJ r = Stack_pop(cz->stack); \
+	OBJ r = Quotation_pop_(cz, cz->stack); \
 	OBJ m = bind(cz, r, (MSG)); \
 	if (m != CZ_UNDEFINED) { \
 		((CzMethod)m)(cz, r); \
 	} \
 	else { \
-		printf("object does not respond to message %lu\n", m); \
+		Quotation_push_(cz, cz->stack, r); \
+		printf("object does not respond to message\n"); \
 	} \
 })
 
-#define CZ_PUSH(o) (Stack_push(cz->stack, (OBJ)(o)))
-#define CZ_POP()   (Stack_pop(cz->stack))
+#define CZ_PUSH(o) (Quotation_push_(cz, cz->stack, (OBJ)(o)))
+#define CZ_POP()   (Quotation_pop_(cz, cz->stack))
+#define CZ_PEEK(s) (CZ_AS(Quotation, s)->items[CZ_AS(Quotation, s)->size-1])
 
 OBJ
 djb2_hash(void *, size_t);
@@ -207,32 +202,6 @@ Object_hash(CzState *, OBJ);
 OBJ
 Object_same(CzState *, OBJ);
 
-/* Stacks */
-
-#define Stack_peek(s)  ((s)->items[(s)->top-1])
-#define Stack_empty(s) ((s)->top == 0)
-
-CzStack *
-Stack_new(unsigned int);
-
-int
-Stack_destroy(CzStack *);
-
-int
-Stack_reset(CzStack *);
-
-int
-Stack_push(CzStack *, OBJ);
-
-int
-Stack_push_bulk(CzStack *, ...);
-
-OBJ
-Stack_pop(CzStack *);
-
-int
-Stack_swap(CzStack *s);
-
 /* Tables */
 
 OBJ
@@ -265,16 +234,36 @@ cz_bootstrap_table(CzState *);
 /* Quotations */
 
 OBJ
-Quotation_new(CzState *);
+Quotation_create_(CzState *);
 
 OBJ
-Quotation_append(CzState *, OBJ);
+Quotation_push_(CzState *, CzQuotation *, OBJ);
+
+OBJ
+Quotation_pop_(CzState *, CzQuotation *);
+
+OBJ
+Quotation_swap_(CzState *, CzQuotation *);
+
+OBJ
+Quotation_push(CzState *, OBJ);
 
 OBJ
 Quotation_eval(CzState *, OBJ);
 
 void
 cz_bootstrap_quotation(CzState *);
+
+/* Fixnums */
+
+OBJ
+Fixnum_add(CzState *, OBJ);
+
+OBJ
+Fixnum_subtract(CzState *, OBJ);
+	
+void
+cz_bootstrap_fixnum(CzState *);
 
 #endif /* COMPOZE_H */
 

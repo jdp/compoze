@@ -33,7 +33,7 @@ OBJ
 Pair_create_(CzState *cz, OBJ hash, OBJ key, OBJ value)
 {
 	CzPair *self   = CZ_MAKE_OBJECT(Pair);
-	self->key_hash = (size_t)hash;
+	self->key_hash = hash;
 	self->key      = key;
 	self->value    = value;
 	return (OBJ)self;

@@ -11,14 +11,12 @@
 void
 repl(void)
 {
-	int i;
 	char *prompt = "cz> ";
 	char *line;
 	
 	cz_bufio *buf;
 	Lexer *lex;
 	Parser *par;
-	OBJ o;
 	
 	GC_INIT();
 	
@@ -35,24 +33,7 @@ repl(void)
 		par = Parser_new();
 		Parser_parse(par, cz, lex);
 		Quotation_eval(cz, CZ_POP());
-		for (i = 0; i < cz->stack->top; i++) {
-			o = cz->stack->items[i];
-			if (CZ_IS_NIL(o)) {
-				printf("nil ");
-			}
-			else if (o == CZ_TRUE) {
-				printf("true ");
-			}
-			else if (o == CZ_FALSE) {
-				printf("false ");
-			}
-			else if (CZ_IS_FIXNUM(o)) {
-					printf("%d ", CZ_FIX2INT(o));
-			}
-			else {
-				printf("%d:W ", CZ_AS(Object, o)->type);
-			}
-		}
+		cz_tree(cz, cz->stack, 0);
 		printf("\n");
 		add_history(line);
 	}

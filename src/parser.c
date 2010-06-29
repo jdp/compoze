@@ -42,7 +42,7 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 	//int in_def = 0;
 	int token, qdepth = 0;
 	   
-	Quotation_new(cz);
+	CZ_PUSH(Quotation_create_(cz));
 	
 	while ((token = Lexer_scan(l)) != T_EOF) {
 		switch (token) {
@@ -55,30 +55,30 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 			/* Begin quoted code */
 			case T_BQUOTE:
 				qdepth++;
-				Quotation_new(cz);
+				CZ_PUSH(Quotation_create_(cz));
 				break;
 				
 			/* End quoted code */
 			case T_EQUOTE:
 				qdepth--;
-				Stack_swap(cz->stack);
-				Quotation_append(cz, CZ_POP());
+				Quotation_swap_(cz, cz->stack);
+				Quotation_push(cz, CZ_POP());
 				break;
 				
 			/* Add a word to the quotation, as a symbol */
 			case T_WORD:
 				o = Symbol_intern(cz, l->buffer);
 				CZ_PUSH(o);
-				Stack_swap(cz->stack);
-				Quotation_append(cz, CZ_POP());
+				Quotation_swap_(cz, cz->stack);
+				Quotation_push(cz, CZ_POP());
 				break;
 				
 			/* Add a number to the quotation */
 			case T_NUMBER:
 				o = CZ_INT2FIX(atoi(l->buffer));
 				CZ_PUSH(o);
-				Stack_swap(cz->stack);
-				Quotation_append(cz, CZ_POP());
+				Quotation_swap_(cz, cz->stack);
+				Quotation_push(cz, CZ_POP());
 				break;
 				
 			/* facepalm */
@@ -97,9 +97,22 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 void
 cz_tree(CzState *cz, CzQuotation *q, int depth)
 {
+	printf("Stack size: %lu\n", q->size);
 	int i;
 	for (i = 0; i < q->size; i++) {
-		if (CZ_AS(Object, q->items[i])->type == CZ_T_Quotation) {
+		if (q->items[i] == CZ_NIL) {
+			printf("nil ");
+		}
+		else if (q->items[i] == CZ_TRUE) {
+			printf("true ");
+		}
+		else if (q->items[i] == CZ_FALSE) {
+			printf("false ");
+		}
+		else if (CZ_IS_FIXNUM(q->items[i])) {
+			printf("%d ", CZ_FIX2INT(q->items[i]));
+		}
+		else if (CZ_AS(Object, q->items[i])->type == CZ_T_Quotation) {
 			printf("[ ");
 			cz_tree(cz, CZ_AS(Quotation, q->items[i]), depth+1);
 			printf("] ");
