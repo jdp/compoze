@@ -46,6 +46,7 @@ typedef enum
 	CZ_T_Pair,
 	CZ_T_Table,
 	CZ_T_Quotation,
+	CZ_T_Continuation,
 	CZ_T_Error,
 	CZ_T_User,
 	CZ_T_MAX
@@ -58,6 +59,7 @@ typedef enum
 #define CZ_UNDEFINED       ((OBJ)4)
 #define CZ_TRUE            ((OBJ)2)
 #define CZ_FALSE           ((OBJ)6)
+#define CZ_UNWIND          ((OBJ)8)
 #define CZ_IS_NIL(o)       ((OBJ)(o) == CZ_NIL)
 #define CZ_IS_BOOL(o)      (((OBJ)(o) & 3) == 2)
 #define CZ_IS_IMMEDIATE(o) (o == CZ_NIL || o == CZ_UNDEFINED || CZ_IS_BOOL(o) || CZ_IS_FIXNUM(o))
@@ -130,12 +132,21 @@ typedef struct cz_quotation
 	OBJ *items;
 } CzQuotation;
 
+typedef struct cz_continuation
+{
+	CZ_OBJECT_HEADER
+	struct cz_quotation *data_stack;
+	struct cz_quotation *retain_stack;
+	struct cz_quotation *call_stackl;
+} CzContinuation;
+
 typedef struct cz_state
 {
 	CZ_OBJECT_HEADER
 	struct cz_vtable *vtables[CZ_T_MAX];
 	struct cz_table *symbols, *strings;
-	struct cz_quotation *stack;
+	struct cz_quotation *data_stack, *retain_stack, *call_stack;
+	int ip;
 } CzState;
 
 #define cz_define_method(T, S, M) VTable_add_method_(cz, CZ_VTABLE(T), CZ_SYMBOL(S), (CzMethod)M)
@@ -151,24 +162,28 @@ typedef struct cz_state
 })
 
 #define send2(MSG) ({ \
-	OBJ r = Quotation_pop_(cz, cz->stack); \
+	OBJ r = Quotation_pop_(cz, cz->data_stack); \
 	OBJ m = bind(cz, r, (MSG)); \
 	if (m != CZ_UNDEFINED) { \
 		((CzMethod)m)(cz, r); \
 	} \
 	else { \
-		Quotation_push_(cz, cz->stack, r); \
+		Quotation_push_(cz, cz->data_stack, r); \
 		printf("object does not respond to message\n"); \
 	} \
 })
 
-#define CZ_PUSH(o) (Quotation_push_(cz, cz->stack, (OBJ)(o)))
-#define CZ_POP()   (Quotation_pop_(cz, cz->stack))
+#define CZ_PUSH(o) (Quotation_push_(cz, cz->data_stack, (OBJ)(o)))
+#define CZ_POP()   (Quotation_pop_(cz, cz->data_stack))
+#define CZ_SWAP()  (Quotation_swap_(cz, cz->data_stack))
 #define CZ_PEEK(s) (CZ_AS(Quotation, s)->items[CZ_AS(Quotation, s)->size-1])
+
 
 OBJ djb2_hash(void *, size_t);
 
 /* Helper functions */
+
+void cz_tree(CzState *, CzQuotation *, int);
 
 CzType cz_proto_id(OBJ);
 
@@ -209,6 +224,9 @@ Object_hash(CzState *, OBJ);
 
 OBJ
 Object_same(CzState *, OBJ);
+
+OBJ
+Object_swap(CzState *, OBJ);
 
 /* Strings */
 
@@ -251,6 +269,9 @@ cz_bootstrap_table(CzState *);
 
 OBJ
 Quotation_create_(CzState *);
+
+void
+Quotation_eval_(CzState *);
 
 OBJ
 Quotation_push_(CzState *, CzQuotation *, OBJ);

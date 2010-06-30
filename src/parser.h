@@ -11,8 +11,9 @@ enum
 
 typedef struct cz_parser
 {
-	cz_bufio *in;
-	int       lineno;
+	cz_bufio         *in;
+	int               lineno;
+	struct cz_vtable *dict;
 } Parser;
 
 Parser *

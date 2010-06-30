@@ -30,6 +30,16 @@ Parser_destroy(Parser *p)
 	return CZ_OK;
 }
 
+int
+Parser_initialize(Parser *p, CzState *cz)
+{
+	if (p == NULL) {
+		return CZ_ERR;
+	}
+	p->dict = VTable_delegated_(cz, 0);
+	return CZ_OK;
+}
+
 /*
  * Builds a quotation from the token stream.
  * The resulting quotation is left on the Compoze state's stack as
@@ -61,7 +71,7 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 			/* End quoted code */
 			case T_EQUOTE:
 				qdepth--;
-				Quotation_swap_(cz, cz->stack);
+				Quotation_swap_(cz, cz->data_stack);
 				Quotation_push(cz, CZ_POP());
 				break;
 				
@@ -69,7 +79,7 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 			case T_WORD:
 				o = Symbol_intern_(cz, l->buffer);
 				CZ_PUSH(o);
-				Quotation_swap_(cz, cz->stack);
+				Quotation_swap_(cz, cz->data_stack);
 				Quotation_push(cz, CZ_POP());
 				break;
 				
@@ -77,7 +87,7 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 			case T_NUMBER:
 				o = CZ_INT2FIX(atoi(l->buffer));
 				CZ_PUSH(o);
-				Quotation_swap_(cz, cz->stack);
+				Quotation_swap_(cz, cz->data_stack);
 				Quotation_push(cz, CZ_POP());
 				break;
 				

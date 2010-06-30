@@ -179,7 +179,9 @@ bootstrap(CzState *cz)
 {
 	printf("booting straps...\n");
 	
-	cz->stack = CZ_AS(Quotation, Quotation_create_(cz));
+	cz->data_stack = CZ_AS(Quotation, Quotation_create_(cz));
+	cz->retain_stack = CZ_AS(Quotation, Quotation_create_(cz));
+	cz->call_stack = CZ_AS(Quotation, Quotation_create_(cz));
 	
 	cz->symbols = CZ_AS(Table, Table_create_(cz));
 	cz->strings = CZ_AS(Table, Table_create_(cz));

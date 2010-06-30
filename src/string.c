@@ -43,17 +43,17 @@ String_create2_(CzState *cz, const char *str)
 
 OBJ
 cz_sprintf(CzState *cz, const char *fmt, ...) {
-  va_list arg;
-  va_start(arg, fmt);
-  int len = vsnprintf(NULL, 0, fmt, arg);
-  char *ptr = CZ_ALLOC_N(char, len);
-  va_end(arg);
-  va_start(arg, fmt);
-  vsprintf(ptr, fmt, arg);
-  va_end(arg);
-  OBJ str = String_create_(cz, ptr, len);
-  CZ_FREE(ptr);
-  return str;
+	va_list arg;
+	va_start(arg, fmt);
+	int len = vsnprintf(NULL, 0, fmt, arg);
+	char *ptr = CZ_ALLOC_N(char, len);
+	va_end(arg);
+	va_start(arg, fmt);
+	vsprintf(ptr, fmt, arg);
+	va_end(arg);
+	OBJ str = String_create_(cz, ptr, len);
+	CZ_FREE(ptr);
+	return str;
 }
 
 void

@@ -33,8 +33,9 @@ repl(void)
 		par = Parser_new();
 		Parser_parse(par, cz, lex);
 		Quotation_eval(cz, CZ_POP());
-		printf("-- stack size: %lu --\n", cz->stack->size);
-		cz_tree(cz, cz->stack, 0);
+		Quotation_eval_(cz);
+		printf("-- stack size: %lu --\n", cz->data_stack->size);
+		cz_tree(cz, cz->data_stack, 0);
 		printf("\n");
 		add_history(line);
 	}
