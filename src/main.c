@@ -32,7 +32,7 @@ repl(void)
 		lex = Lexer_new(buf);
 		par = Parser_new();
 		Parser_parse(par, cz, lex);
-		Quotation_eval(cz, CZ_POP());
+		Quotation_call(cz, CZ_POP());
 		Quotation_eval_(cz);
 		printf("-- stack size: %lu --\n", cz->data_stack->size);
 		cz_tree(cz, cz->data_stack, 0);

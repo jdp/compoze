@@ -20,7 +20,7 @@ Symbol_intern_(CzState *cz, char *string)
 	symbol->frozen = CZ_FALSE;
 	symbol->string = strdup(string);
 	symbol->len = strlen(string);
-	Table_insert_(cz, (OBJ)cz->symbols, hash, (OBJ)string, (OBJ)symbol);
+	Table_insert_(cz, cz->symbols, hash, (OBJ)string, (OBJ)symbol);
 	return (OBJ)symbol;
 }
 
@@ -39,6 +39,12 @@ OBJ
 String_create2_(CzState *cz, const char *str)
 {
 	return String_create_(cz, str, strlen(str));
+}
+
+OBJ
+String_throw(CzState *cz, OBJ self)
+{
+	return self;
 }
 
 OBJ

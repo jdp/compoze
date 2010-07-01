@@ -1,7 +1,7 @@
 #include "compoze.h"
 
 /*
- * Credit for primes table: Aaron KOBJrowne
+ * Credit for primes table: Aaron Crowne
  * http://planetmath.org/encyclopedia/GoodHashTablePrimes.html
  */
 static const unsigned int primes[] = {
@@ -59,14 +59,14 @@ Table_create_(CzState *cz)
  * Also super useful.
  */
 OBJ
-Table_insert_(CzState *cz, OBJ self, OBJ hash, OBJ key, OBJ value)
+Table_insert_(CzState *cz, CzTable *self, OBJ hash, OBJ key, OBJ value)
 {
 	OBJ pair;
 	//printf("attempting to insert %s\n", CZ_AS(Symbol, key)->string);
 	pair = Pair_create_(cz, (OBJ)hash, (OBJ)key, (OBJ)value);
-	Table_insert_pair_(cz, self, pair);
+	Table_insert_pair_(cz, self, CZ_AS(Pair, pair));
 	//printf("inserted %s\n", CZ_AS(Symbol, key)->string);
-	return self;
+	return (OBJ)self;
 }
 
 /*
@@ -74,54 +74,50 @@ Table_insert_(CzState *cz, OBJ self, OBJ hash, OBJ key, OBJ value)
  * Reserved mostly for internal use.
  */
 OBJ
-Table_insert_pair_(CzState *cz, OBJ self, OBJ pair)
+Table_insert_pair_(CzState *cz, CzTable *self, CzPair *pair)
 {
-	CzTable *t;
 	size_t i;
 	
-	t = CZ_AS(Table, self);
-	if ((++(t->size) / t->cap) > 0.7) {
+	if ((++(self->size) / self->cap) > 0.7) {
 		Table_resize_(cz, self);
 	}
-	i = (size_t)(CZ_AS(Pair, pair)->key_hash) % t->cap;
-	CZ_AS(Pair, pair)->next = CZ_AS(Pair, t->items[i]);
-	t->items[i] = pair;
-	return self;
+	i = (size_t)(pair->key_hash) % self->cap;
+	pair->next = CZ_AS(Pair, self->items[i]);
+	self->items[i] = (OBJ)pair;
+	return (OBJ)self;
 }
 
 /*
  * Grows a table as needed.
  */
 OBJ
-Table_resize_(CzState *cz, OBJ self)
+Table_resize_(CzState *cz, CzTable *self)
 {
-	CzTable *t;
 	OBJ *new_items;
 	size_t i;
 	
-	t = (CzTable *)self;
-	if ((t->size / t->cap) >= 0.7) {
-		t->cap = primes[++(t->prime)];
+	if ((self->size / self->cap) >= 0.7) {
+		self->cap = primes[++(self->prime)];
 	}
-	new_items = (OBJ*)CZ_CALLOC(t->cap, sizeof(OBJ));
+	new_items = (OBJ *)CZ_CALLOC(self->cap, sizeof(OBJ));
 	if (new_items == NULL) {
-		t->cap = primes[--(t->prime)];
+		self->cap = primes[--(self->prime)];
 		return CZ_NIL;
 	}
-	memset(new_items, 0, t->cap * sizeof(OBJ));
-	for (i = 0; i < t->size; i++) {
-		new_items[((size_t)(CZ_AS(Pair, t->items[i])->key_hash) % t->cap)] = t->items[i];
+	memset(new_items, 0, self->cap * sizeof(OBJ));
+	for (i = 0; i < self->size; i++) {
+		new_items[((size_t)(CZ_AS(Pair, self->items[i])->key_hash) % self->cap)] = self->items[i];
 	} 
-	t->items = new_items;
-	return self;
+	self->items = new_items;
+	return (OBJ)self;
 }
 
 OBJ
-Table_lookup_(CzState *cz, OBJ self, OBJ hash, OBJ key)
+Table_lookup_(CzState *cz, CzTable *self, OBJ hash, OBJ key)
 {
 	CzPair *pair;
 	
-	pair = CZ_AS(Pair, CZ_AS(Table, self)->items[hash % CZ_AS(Table, self)->cap]);
+	pair = CZ_AS(Pair, self->items[hash % self->cap]);
 	while (!CZ_IS_NIL(pair)) {
 		if (key == pair->key) {
 			return pair->value;
@@ -146,7 +142,7 @@ Table_insert(CzState *cz, OBJ self)
 	
 	hash = send(key, CZ_SYMBOL("hash"));
 	pair = Pair_create_(cz, hash, hash, value);
-	Table_insert_pair_(cz, self, pair);
+	Table_insert_pair_(cz, CZ_AS(Table, self), CZ_AS(Pair, pair));
 	
 	CZ_PUSH(self);
 	

@@ -52,10 +52,10 @@ VTable_add_method_(CzState *cz, CzVTable *self, OBJ key, CzMethod method)
 {
 	CzMethod m;
 	
-	m = (CzMethod)Table_lookup_(cz, (OBJ)self->table, CZ_AS(Symbol, key)->hash, key);
+	m = (CzMethod)Table_lookup_(cz, self->table, CZ_AS(Symbol, key)->hash, key);
 	if ((OBJ)m == CZ_UNDEFINED) {
 		m = method;
-		Table_insert_(cz, (OBJ)self->table, CZ_AS(Symbol, key)->hash, key, (OBJ)m);
+		Table_insert_(cz, self->table, CZ_AS(Symbol, key)->hash, key, (OBJ)m);
 	}
 	return m;
 }
@@ -70,7 +70,7 @@ VTable_lookup_(CzState *cz, CzVTable *self, OBJ key)
 {
 	OBJ value;
 	
-	if ((value = Table_lookup_(cz, (OBJ)self->table, CZ_AS(Symbol, key)->hash, (OBJ)key)) != CZ_UNDEFINED) {
+	if ((value = Table_lookup_(cz, self->table, CZ_AS(Symbol, key)->hash, (OBJ)key)) != CZ_UNDEFINED) {
 		return value;
 	}
 	if (self->parent) {
@@ -101,6 +101,15 @@ Object_true(CzState *cz, OBJ self)
 	CZ_PUSH(self);
 	CZ_PUSH(CZ_TRUE);
 	return CZ_NIL;
+}
+
+OBJ
+Object_quote_(CzState *cz, OBJ obj)
+{
+	CzQuotation *new;
+	new = CZ_AS(Quotation, Quotation_create_(cz));
+	Quotation_push_(cz, new, obj);
+	return (OBJ)new;
 }
 
 OBJ
@@ -140,6 +149,12 @@ Object_same(CzState *cz, OBJ self)
 }
 
 OBJ
+Object_drop(CzState *cz, OBJ self)
+{
+	return self;
+}	
+
+OBJ
 Object_dup(CzState *cz, OBJ self)
 {
 	CZ_PUSH(self);
@@ -158,12 +173,66 @@ Object_swap(CzState *cz, OBJ self)
 }
 
 OBJ
-Object_unit(CzState *cz, OBJ self)
+Object_swapd(CzState *cz, OBJ self)
+{
+	CZ_RETAIN(self);
+	send2(CZ_SYMBOL("swap"));
+	CZ_RESTORE();
+	return self;
+}
+
+OBJ
+Object_dupd(CzState *cz, OBJ self)
+{
+	CZ_RETAIN(self);
+	send2(CZ_SYMBOL("dup"));
+	CZ_RESTORE();
+	return self;
+}
+
+OBJ
+Object_nip(CzState *cz, OBJ self)
+{
+	OBJ nipped;
+	CZ_RETAIN(self);
+	nipped = CZ_POP();
+	CZ_RESTORE();
+	return nipped;
+}
+
+OBJ
+Object_pick(CzState *cz, OBJ self)
+{
+	CZ_RETAIN(self);
+	send2(CZ_SYMBOL("dupd"));
+	send2(CZ_SYMBOL("swap"));
+	CZ_RESTORE();
+	send2(CZ_SYMBOL("swap"));
+	return self;
+}
+
+OBJ
+Object_quote(CzState *cz, OBJ self)
 {
 	OBJ new;
-	new = Quotation_unit_(cz, self);
+	new = Object_quote_(cz, self);
 	CZ_PUSH(new);
 	return new;
+}
+
+OBJ
+Object_retain(CzState *cz, OBJ self)
+{
+	CZ_RETAIN(self);
+	return self;
+}
+
+OBJ
+Object_restore(CzState *cz, OBJ self)
+{
+	CZ_PUSH(self);
+	CZ_RESTORE();
+	return self;
 }
 
 CzType
@@ -214,10 +283,17 @@ bootstrap(CzState *cz)
 	cz_define_method(Object,   "same", Object_same);
 	cz_define_method(Object, "equals", Object_same);
 	cz_define_method(Object,      "=", Object_same);
+	cz_define_method(Object,   "drop", Object_drop);
 	cz_define_method(Object,    "dup", Object_dup);
 	cz_define_method(Object,   "swap", Object_swap);
-	cz_define_method(Object,   "unit", Object_unit);
-	cz_define_method(Object,  "quote", Object_unit);
+	cz_define_method(Object,   "unit", Object_quote);
+	cz_define_method(Object,  "quote", Object_quote);
+	cz_define_method(Object,  "swapd", Object_swapd);
+	cz_define_method(Object,   "dupd", Object_dupd);
+	cz_define_method(Object,    "nip", Object_nip);
+	cz_define_method(Object,   "pick", Object_pick);
+	cz_define_method(Object,     ">r", Object_retain);
+	cz_define_method(Object,     "r>", Object_restore);
 	
 	cz_bootstrap_table(cz);
 	cz_bootstrap_quotation(cz);

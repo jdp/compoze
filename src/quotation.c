@@ -117,15 +117,6 @@ Quotation_concat_(CzState *cz, CzQuotation *self, CzQuotation *other)
 }
 
 OBJ
-Quotation_unit_(CzState *cz, OBJ obj)
-{
-	CzQuotation *new;
-	new = CZ_AS(Quotation, Quotation_create_(cz));
-	Quotation_push_(cz, new, obj);
-	return (OBJ)new;
-}
-
-OBJ
 Quotation_cons_(CzState *cz, CzQuotation *self, OBJ obj)
 {
 	int i;
@@ -150,8 +141,65 @@ Quotation_cons_(CzState *cz, CzQuotation *self, OBJ obj)
  * If it's an immediate, push it, otherwise send it as a message.
  */
 
-CzQuotation *
-Quotation_eval_step_(CzState *cz);
+static CzQuotation *
+Quotation_eval_step_(CzState *cz)
+{
+	CzQuotation *call,   /* a 2-quote containg called quotation, its p, and retain: [ quot n ret ] */
+	            *quot,   /* the quotation being called */
+				*retain; /* the retained data of the quot */
+	int ip;              /* ip of quotation being called */
+	OBJ obj;             /* generic object holder */
+
+	/* get call from call stack */
+	call = CZ_AS(Quotation, cz->call_stack->items[cz->call_stack->size-1]);
+	/* get the quotation and its ip from the call */
+	quot = CZ_AS(Quotation, call->items[0]);
+	ip = CZ_FIX2INT(call->items[1]);
+	/* current element in called quotation */
+	obj = quot->items[ip];
+	/* get the retain stack */
+	retain = CZ_AS(Quotation, call->items[2]);
+
+	#ifdef DEBUG
+	printf(">> call stack <<\n");
+	cz_tree(cz, cz->call_stack, 0);
+	#endif
+
+	if (ip < quot->size) {
+		switch(cz_proto_id(obj)) {
+
+			/* if obj is a symbol, treat it as a message send */
+			case CZ_T_Symbol:
+				send2(obj);
+				break;
+
+			/* otherwise, push it to the data stack */
+			default:
+				CZ_PUSH(obj);
+				break;
+
+		}
+	}
+
+	if (((ip + 1) > quot->size) && (retain->size > 0)) {
+		/* everything left on the retain stack should be restored */
+		Quotation_concat_(cz, cz->data_stack, retain);
+		retain->size = 0;
+	}
+
+	if ((ip + 1) > quot->size) {
+		/* get rid of the call if it's empty */
+		Quotation_pop_(cz, cz->call_stack);
+	}
+
+	#ifdef DEBUG
+	printf("\n>> data stack <<\n");
+	cz_tree(cz, cz->data_stack, 0);
+	printf("\n");
+	#endif
+
+	return call;
+}
 
 void
 Quotation_eval_(CzState *cz)
@@ -169,66 +217,6 @@ Quotation_eval_(CzState *cz)
 		
 	}
 	
-}
-
-CzQuotation *
-Quotation_eval_step_(CzState *cz)
-{
-	CzQuotation *call,   /* a 2-quote containg called quotation, its p, and retain: [ quot n ret ] */
-	            *quot,   /* the quotation being called */
-				*retain; /* the retained data of the quot */
-	int ip;              /* ip of quotation being called */
-	OBJ obj;             /* generic object holder */
-	
-	/* get call from call stack */
-	call = CZ_AS(Quotation, cz->call_stack->items[cz->call_stack->size-1]);
-	/* get the quotation and its ip from the call */
-	quot = CZ_AS(Quotation, call->items[0]);
-	ip = CZ_FIX2INT(call->items[1]);
-	/* current element in called quotation */
-	obj = quot->items[ip];
-	/* get the retain stack */
-	retain = CZ_AS(Quotation, call->items[2]);
-	
-	#ifdef DEBUG
-	printf(">> call stack <<\n");
-	cz_tree(cz, cz->call_stack, 0);
-	#endif
-	
-	if (ip < quot->size) {
-		switch(cz_proto_id(obj)) {
-		
-			/* if obj is a symbol, treat it as a message send */
-			case CZ_T_Symbol:
-				send2(obj);
-				break;
-			
-			/* otherwise, push it to the data stack */
-			default:
-				CZ_PUSH(obj);
-				break;
-			
-		}
-	}
-	
-	if (((ip + 1) > quot->size) && (retain->size > 0)) {
-		/* everything left on the retain stack should be restored */
-		Quotation_concat_(cz, cz->data_stack, retain);
-		retain->size = 0;
-	}
-	
-	if ((ip + 1) > quot->size) {
-		/* get rid of the call if it's empty */
-		Quotation_pop_(cz, cz->call_stack);
-	}
-	
-	#ifdef DEBUG
-	printf("\n>> data stack <<\n");
-	cz_tree(cz, cz->data_stack, 0);
-	printf("\n");
-	#endif
-
-	return call;
 }
 
 /*
@@ -269,14 +257,16 @@ Quotation_if(CzState *cz, OBJ self)
 	OBJ other, cond;
 	other = CZ_POP();
 	cond = CZ_POP();
-	return Quotation_eval(cz, (cond == CZ_FALSE) ? other : self);
+	CZ_PUSH((cond == CZ_FALSE) ? other : self);
+	send2(CZ_SYMBOL("call"));
+	return self;
 }
 
 OBJ
-Quotation_eval(CzState *cz, OBJ self)
+Quotation_call(CzState *cz, OBJ self)
 {
 	OBJ call;
-	call = Quotation_create2_(cz, self, CZ_INT2FIX(0), Quotation_dup_(cz, cz->retain_stack), CZ_UNWIND);
+	call = CZ_QUOTE(self, CZ_INT2FIX(0), Quotation_dup_(cz, cz->retain_stack));
 	cz->retain_stack->size = 0;
 	Quotation_push_(cz, cz->call_stack, call);
 	return call;
@@ -287,8 +277,9 @@ Quotation_dip(CzState *cz, OBJ self)
 {
 	OBJ call, saved;
 	saved = CZ_POP();
-	Quotation_push_(cz, cz->retain_stack, saved);
-	Quotation_eval(cz, self);
+	CZ_RETAIN(saved);
+	CZ_PUSH(self);
+	send2(CZ_SYMBOL("call"));
 	return self;
 }
 
@@ -302,13 +293,27 @@ Quotation_cons(CzState *cz, OBJ self)
 	return new;
 }
 
+OBJ
+Quotation_times(CzState *cz, OBJ self)
+{
+	OBJ times;
+	int i;
+	times = CZ_POP();
+	for (i = 0; i < CZ_FIX2INT(times); i++) {
+		CZ_PUSH(self);
+		send2(CZ_SYMBOL("call"));
+	}
+	return self;
+}
+
 void
 cz_bootstrap_quotation(CzState *cz)
 {
 	cz_define_method(Quotation,   "at", Quotation_at);
-	cz_define_method(Quotation, "call", Quotation_eval);
+	cz_define_method(Quotation, "call", Quotation_call);
 	cz_define_method(Quotation, "push", Quotation_push);
 	cz_define_method(Quotation, "cons", Quotation_cons);
 	cz_define_method(Quotation,  "dip", Quotation_dip);
 	cz_define_method(Quotation,   "if", Quotation_if);
+	cz_define_method(Quotation, "times", Quotation_times);
 }

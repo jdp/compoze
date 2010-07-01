@@ -81,8 +81,9 @@ typedef enum
 	o;                                \
 })
 
-#define CZ_AS(T,O)      ((Cz##T *)(O))
-#define CZ_SYMBOL(s)    (Symbol_intern_(cz, s))
+#define CZ_AS(T,O)       ((Cz##T *)(O))
+#define CZ_SYMBOL(s)     (Symbol_intern_(cz, s))
+#define CZ_QUOTE(o, ...) (Quotation_create2_(cz, o, ##__VA_ARGS__ , CZ_UNWIND));
 
 typedef struct cz_vtable
 {
@@ -132,6 +133,12 @@ typedef struct cz_quotation
 	OBJ *items;
 } CzQuotation;
 
+typedef struct cz_error
+{
+	CZ_OBJECT_HEADER
+	OBJ reason;
+} CzError;
+
 typedef struct cz_continuation
 {
 	CZ_OBJECT_HEADER
@@ -173,11 +180,12 @@ typedef struct cz_state
 	} \
 })
 
-#define CZ_PUSH(o) (Quotation_push_(cz, cz->data_stack, (OBJ)(o)))
-#define CZ_POP()   (Quotation_pop_(cz, cz->data_stack))
-#define CZ_SWAP()  (Quotation_swap_(cz, cz->data_stack))
-#define CZ_PEEK(s) (CZ_AS(Quotation, s)->items[CZ_AS(Quotation, s)->size-1])
-
+#define CZ_PUSH(o)   (Quotation_push_(cz, cz->data_stack, (OBJ)(o)))
+#define CZ_POP()     (Quotation_pop_(cz, cz->data_stack))
+#define CZ_SWAP()    (Quotation_swap_(cz, cz->data_stack))
+#define CZ_PEEK(s)   (CZ_AS(Quotation, s)->items[CZ_AS(Quotation, s)->size-1])
+#define CZ_RETAIN(o) (Quotation_push_(cz, cz->retain_stack, (o)))
+#define CZ_RESTORE() (Quotation_push_(cz, cz->data_stack, Quotation_pop_(cz, cz->retain_stack)))
 
 OBJ djb2_hash(void *, size_t);
 
@@ -189,44 +197,34 @@ CzType cz_proto_id(OBJ);
 
 /* Objects */
 
-int
-bootstrap(CzState *);
+int bootstrap(CzState *);
 
-inline void *
-alloc(size_t);
+inline void *alloc(size_t);
 
-OBJ
-VTable_lookup_(CzState *, CzVTable *, OBJ);
+CzVTable *VTable_delegated_(CzState *, CzVTable *);
+CzObject *VTable_allocate_(CzState *, CzVTable *);
+CzMethod VTable_add_method_(CzState *, CzVTable *, OBJ, CzMethod);
+OBJ VTable_lookup_(CzState *, CzVTable *, OBJ);
 
-CzVTable *
-VTable_delegated_(CzState *, CzVTable *);
+OBJ bind(CzState *, OBJ, OBJ);
 
-CzObject *
-VTable_allocate_(CzState *, CzVTable *);
+OBJ Object_quote_(CzState *cz, OBJ obj);
 
-CzMethod
-VTable_add_method_(CzState *, CzVTable *, OBJ, CzMethod);
-
-OBJ
-bind(CzState *, OBJ, OBJ);
-
-OBJ
-Object_true(CzState *, OBJ);
-
-OBJ
-Object_false(CzState *, OBJ);
-
-OBJ
-Object_nil(CzState *, OBJ);
-
-OBJ
-Object_hash(CzState *, OBJ);
-
-OBJ
-Object_same(CzState *, OBJ);
-
-OBJ
-Object_swap(CzState *, OBJ);
+OBJ Object_true(CzState *, OBJ);
+OBJ Object_false(CzState *, OBJ);
+OBJ Object_nil(CzState *, OBJ);
+OBJ Object_hash(CzState *, OBJ);
+OBJ Object_same(CzState *, OBJ);
+OBJ Object_drop(CzState *, OBJ);
+OBJ Object_dup(CzState *, OBJ);
+OBJ Object_swap(CzState *, OBJ);
+OBJ Object_quote(CzState *, OBJ);
+OBJ Object_swapd(CzState *, OBJ);
+OBJ Object_dupd(CzState *, OBJ);
+OBJ Object_nip(CzState *, OBJ);
+OBJ Object_pick(CzState *, OBJ);
+OBJ Object_retain(CzState *, OBJ);
+OBJ Object_restore(CzState *, OBJ);
 
 /* Strings */
 
@@ -238,72 +236,46 @@ void cz_bootstrap_string(CzState *);
 
 /* Tables */
 
-OBJ
-Table_create_(CzState *);
+OBJ Table_create_(CzState *);
+OBJ Table_insert_(CzState *, CzTable *, OBJ, OBJ, OBJ);
+OBJ Table_insert_pair_(CzState *, CzTable *, CzPair *);
+OBJ Table_resize_(CzState *, CzTable *);
+OBJ Table_lookup_(CzState *, CzTable *, OBJ, OBJ);
 
-OBJ
-Table_insert_(CzState *, OBJ, OBJ, OBJ, OBJ);
+OBJ Table_insert(CzState *, OBJ);
+OBJ Table_lookup(CzState *, OBJ);
 
-OBJ
-Table_insert_pair_(CzState *, OBJ, OBJ);
+OBJ Pair_create_(CzState *, OBJ, OBJ, OBJ);
 
-OBJ
-Table_resize_(CzState *, OBJ);
-
-OBJ
-Table_lookup_(CzState *, OBJ, OBJ, OBJ);
-
-OBJ
-Table_insert(CzState *, OBJ);
-
-OBJ
-Table_lookup(CzState *, OBJ);
-
-OBJ
-Pair_create_(CzState *, OBJ, OBJ, OBJ);
-
-void
-cz_bootstrap_table(CzState *);
+void cz_bootstrap_table(CzState *);
 
 /* Quotations */
 
-OBJ
-Quotation_create_(CzState *);
+OBJ  Quotation_create_(CzState *);
+OBJ  Quotation_create2_(CzState *cz, OBJ, ...);
+void Quotation_eval_(CzState *);
+OBJ  Quotation_push_(CzState *, CzQuotation *, OBJ);
+OBJ  Quotation_pop_(CzState *, CzQuotation *);
+OBJ  Quotation_drop_(CzState *, CzQuotation *);
+OBJ  Quotation_dup_(CzState *, CzQuotation *);
+OBJ  Quotation_swap_(CzState *, CzQuotation *);
+OBJ  Quotation_concat_(CzState *, CzQuotation *, CzQuotation *);
+OBJ  Quotation_cons_(CzState *, CzQuotation *, OBJ);
 
-void
-Quotation_eval_(CzState *);
+OBJ Quotation_at(CzState *, OBJ);
+OBJ Quotation_push(CzState *, OBJ);
+OBJ Quotation_cons(CzState *, OBJ);
+OBJ Quotation_call(CzState *, OBJ);
+OBJ Quotation_dip(CzState *, OBJ);
+OBJ Quotation_if(CzState *, OBJ);
 
-OBJ
-Quotation_push_(CzState *, CzQuotation *, OBJ);
-
-OBJ
-Quotation_pop_(CzState *, CzQuotation *);
-
-OBJ
-Quotation_swap_(CzState *, CzQuotation *);
-
-OBJ
-Quotation_unit_(CzState *, OBJ);
-
-OBJ
-Quotation_push(CzState *, OBJ);
-
-OBJ
-Quotation_eval(CzState *, OBJ);
-
-void
-cz_bootstrap_quotation(CzState *);
+void cz_bootstrap_quotation(CzState *);
 
 /* Fixnums */
 
-OBJ
-Fixnum_add(CzState *, OBJ);
-
-OBJ
-Fixnum_subtract(CzState *, OBJ);
-	
-void
-cz_bootstrap_fixnum(CzState *);
+OBJ Fixnum_add(CzState *, OBJ);
+OBJ Fixnum_subtract(CzState *, OBJ);
+void cz_bootstrap_fixnum(CzState *);
 
 #endif /* COMPOZE_H */
 
