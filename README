@@ -23,7 +23,6 @@ aims
   
 current status
 
-    
   % quotations
   
     compoze has quotations. any words between
@@ -31,13 +30,18 @@ current status
     as an anonymous function, and are callable
     with the call word.
     
+  % strings
+  
+    they're there! i promise. the parser won't
+    yet accept string literals, but integers will
+    accept a to-string word. try it out.
+    
   % numbers
   
-    numbers are recognized and pushed onto the
-    stack, but there aren't any words to perform
-    operations on them. 
+    right now, numbers are implemented as unboxed
+    fixnums.
   
-inspiration
+inspiration & the shoulders of the giants
 
   % factor http://factorcode.org
   
@@ -47,7 +51,9 @@ inspiration
   
   % potion http://github.com/whymirror/potion
   
+  % tinyrb http://code.macournoyer.com/tinyrb/
+  
 about
 
-  (c) 2009 justin poliey http://justinpoliey.com
+  (c) 2009-2010 justin poliey http://justinpoliey.com
   licensed under the mit license
