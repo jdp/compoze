@@ -1,0 +1,2 @@
+# The sip combinator from TTOCC
+: sip ( [B] [A] -- [B] A [B] ) swap dupd swap [ call ] dip ;
