@@ -9,7 +9,7 @@ SRC = bufio.c \
       main.c
 OBJ = ${SRC:.c=.o}
 LIB = -lreadline `pkg-config --libs bdw-gc`
-CC = gcc
+CC = clang
 CFLAGS = -Wall `pkg-config --cflags bdw-gc`
 ifdef DEBUG
 	CFLAGS += -DDEBUG

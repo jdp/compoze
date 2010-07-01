@@ -135,6 +135,9 @@ cz_tree(CzState *cz, CzQuotation *q, int depth)
 		else {
 			printf("W:%d", cz_proto_id(q->items[i]));
 		}
+		if (depth == 0) {
+			printf("\n");
+		}
 	}
 }
 

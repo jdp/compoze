@@ -157,6 +157,15 @@ Object_swap(CzState *cz, OBJ self)
 	return self;
 }
 
+OBJ
+Object_unit(CzState *cz, OBJ self)
+{
+	OBJ new;
+	new = Quotation_unit_(cz, self);
+	CZ_PUSH(new);
+	return new;
+}
+
 CzType
 cz_proto_id(OBJ object)
 {
@@ -207,6 +216,8 @@ bootstrap(CzState *cz)
 	cz_define_method(Object,      "=", Object_same);
 	cz_define_method(Object,    "dup", Object_dup);
 	cz_define_method(Object,   "swap", Object_swap);
+	cz_define_method(Object,   "unit", Object_unit);
+	cz_define_method(Object,  "quote", Object_unit);
 	
 	cz_bootstrap_table(cz);
 	cz_bootstrap_quotation(cz);

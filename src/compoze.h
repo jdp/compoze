@@ -283,6 +283,9 @@ OBJ
 Quotation_swap_(CzState *, CzQuotation *);
 
 OBJ
+Quotation_unit_(CzState *, OBJ);
+
+OBJ
 Quotation_push(CzState *, OBJ);
 
 OBJ
