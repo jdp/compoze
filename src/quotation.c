@@ -45,6 +45,24 @@ Quotation_push_(CzState *cz, CzQuotation *self, OBJ object)
 }
 
 /*
+ * Inserts an object to an arbitrary position in a quotation.
+ * TODO: Get memmove() to work, less naive
+ */
+OBJ
+Quotation_insert_(CzState *cz, CzQuotation *self, OBJ object, int pos)
+{
+	OBJ tmp;
+	size_t i;
+	Quotation_push_(cz, self, CZ_NIL);
+	for (i = self->size - 1; i > pos; i--) {
+		self->items[i] = self->items[i - 1];
+	}
+	//memmove(self->items + ((pos + 1) * sizeof(OBJ)), self->items + ((pos + 0) * sizeof(OBJ)), sizeof(OBJ) * (self->size - pos - 1));
+	self->items[pos] = object;
+	return (OBJ)self;
+}
+
+/*
  * Returns the last element of a quotation.
  * Also removes that element from it.
  */
@@ -124,82 +142,23 @@ Quotation_cons_(CzState *cz, CzQuotation *self, OBJ obj)
 	
 	new = CZ_AS(Quotation, Quotation_create_(cz));
 	Quotation_push_(cz, new, obj);
-	printf("init cons_ debug: ");
-	cz_tree(cz, new, 0);
 	for (i = 0; i < self->size; i++) {
 		Quotation_push_(cz, new, self->items[i]);
 	}
-	printf("final cons_ debug: ");
-	cz_tree(cz, new, 0);
 	return (OBJ)new;
 }
 
-/*
- * Get the current continuation from the continuation stack.
- * Get the next object in line from the continuation's quotation.
- * If it's the special unwind object, drop that continuation.
- * If it's an immediate, push it, otherwise send it as a message.
- */
-
-static CzQuotation *
-Quotation_eval_step_(CzState *cz)
+OBJ
+Quotation_uncons_(CzState *cz, CzQuotation *self)
 {
-	CzQuotation *call,   /* a 2-quote containg called quotation, its p, and retain: [ quot n ret ] */
-	            *quot,   /* the quotation being called */
-				*retain; /* the retained data of the quot */
-	int ip;              /* ip of quotation being called */
-	OBJ obj;             /* generic object holder */
-
-	/* get call from call stack */
-	call = CZ_AS(Quotation, cz->call_stack->items[cz->call_stack->size-1]);
-	/* get the quotation and its ip from the call */
-	quot = CZ_AS(Quotation, call->items[0]);
-	ip = CZ_FIX2INT(call->items[1]);
-	/* current element in called quotation */
-	obj = quot->items[ip];
-	/* get the retain stack */
-	retain = CZ_AS(Quotation, call->items[2]);
-
-	#ifdef DEBUG
-	printf(">> call stack <<\n");
-	cz_tree(cz, cz->call_stack, 0);
-	#endif
-
-	if (ip < quot->size) {
-		switch(cz_proto_id(obj)) {
-
-			/* if obj is a symbol, treat it as a message send */
-			case CZ_T_Symbol:
-				send2(obj);
-				break;
-
-			/* otherwise, push it to the data stack */
-			default:
-				CZ_PUSH(obj);
-				break;
-
-		}
-	}
-
-	if (((ip + 1) > quot->size) && (retain->size > 0)) {
-		/* everything left on the retain stack should be restored */
-		Quotation_concat_(cz, cz->data_stack, retain);
-		retain->size = 0;
-	}
-
-	if ((ip + 1) > quot->size) {
-		/* get rid of the call if it's empty */
-		Quotation_pop_(cz, cz->call_stack);
-	}
-
-	#ifdef DEBUG
-	printf("\n>> data stack <<\n");
-	cz_tree(cz, cz->data_stack, 0);
-	printf("\n");
-	#endif
-
-	return call;
+	OBJ obj;
+	obj = self->items[0];
+	memmove(self->items, self->items + sizeof(OBJ), sizeof(OBJ) * --self->size);
+	return obj;
 }
+
+CzQuotation *
+Quotation_eval_step_(CzState *cz);
 
 void
 Quotation_eval_(CzState *cz)
@@ -213,10 +172,69 @@ Quotation_eval_(CzState *cz)
 			break;
 		}
 		call = Quotation_eval_step_(cz);
-		call->items[1] = CZ_INT2FIX(CZ_FIX2INT(call->items[1]) + 1);
 		
 	}
 	
+}
+
+CzQuotation *
+Quotation_eval_step_(CzState *cz)
+{
+	CzQuotation *call,   /* a 2-quote containg called quotation and ip [ quot n ] */
+	            *quot;   /* the quotation being called */
+	int ip;              /* ip of quotation being called */
+	OBJ obj;             /* generic object holder */
+	
+	/* get call from call stack */
+	call = CZ_AS(Quotation, cz->call_stack->items[cz->call_stack->size-1]);
+	/* get the quotation and its ip from the call */
+	quot = CZ_AS(Quotation, call->items[0]);
+	ip = CZ_FIX2INT(call->items[1]);
+	/* current element in called quotation */
+	obj = quot->items[ip];
+	
+	#ifdef DEBUG
+	printf(">> call stack <<\n");
+	cz_tree(cz, cz->call_stack, 0);
+	#endif
+	
+	/* ip++ */
+	call->items[1] = CZ_INT2FIX(CZ_FIX2INT(call->items[1]) + 1);
+	
+	if (ip < quot->size) {
+		switch(cz_proto_id(obj)) {
+	
+			/* if obj is a symbol, treat it as a message send */
+			case CZ_T_Symbol:
+				send2(obj);
+				break;
+		
+			/* otherwise, push it to the data stack */
+			default:
+				CZ_PUSH(obj);
+				break;
+		
+		}
+	}
+	
+	/* get call from call stack */
+	call = CZ_AS(Quotation, cz->call_stack->items[cz->call_stack->size-1]);
+	/* get the quotation and its ip from the call */
+	quot = CZ_AS(Quotation, call->items[0]);
+	ip = CZ_FIX2INT(call->items[1]);
+	
+	if ((ip >= quot->size)/* && (cz_proto_id(obj) == CZ_T_Symbol)*/) {
+		/* ensure call drop on finish */
+		Quotation_pop_(cz, cz->call_stack);
+	}
+	
+	#ifdef DEBUG
+	printf("\n>> data stack <<\n");
+	cz_tree(cz, cz->data_stack, 0);
+	printf("\n");
+	#endif
+
+	return call;
 }
 
 /*
@@ -257,7 +275,7 @@ Quotation_if(CzState *cz, OBJ self)
 	OBJ other, cond;
 	other = CZ_POP();
 	cond = CZ_POP();
-	CZ_PUSH((cond == CZ_FALSE) ? other : self);
+	CZ_PUSH((cond == CZ_FALSE) ? self : other);
 	send2(CZ_SYMBOL("call"));
 	return self;
 }
@@ -265,21 +283,39 @@ Quotation_if(CzState *cz, OBJ self)
 OBJ
 Quotation_call(CzState *cz, OBJ self)
 {
-	OBJ call;
-	call = CZ_QUOTE(self, CZ_INT2FIX(0), Quotation_dup_(cz, cz->retain_stack));
-	cz->retain_stack->size = 0;
-	Quotation_push_(cz, cz->call_stack, call);
-	return call;
+	CzQuotation *call,   /* a 2-quote containg called quotation and ip [ quot n ] */
+	            *quot;   /* the quotation being called */
+	int ip;              /* ip of quotation being called */
+	OBJ new_call;
+	
+	if (cz->call_stack->size > 0) {
+	
+	/* get call from call stack */
+	call = CZ_AS(Quotation, cz->call_stack->items[cz->call_stack->size-1]);
+	/* get the quotation and its ip from the call */
+	quot = CZ_AS(Quotation, call->items[0]);
+	ip = CZ_FIX2INT(call->items[1]);
+	
+	if (((ip + 1) >= quot->size)/* && (cz_proto_id(obj) == CZ_T_Symbol)*/) {
+		/* ensure tail call */
+		Quotation_pop_(cz, cz->call_stack);
+	}
+
+	}
+	
+ 	new_call = CZ_QUOTE(self, CZ_INT2FIX(0));
+	Quotation_push_(cz, cz->call_stack, new_call);
+	return self;
 }
 
 OBJ
 Quotation_dip(CzState *cz, OBJ self)
 {
-	OBJ call, saved;
-	saved = CZ_POP();
-	CZ_RETAIN(saved);
 	CZ_PUSH(self);
+	send2(CZ_SYMBOL("swap"));
+	CZ_RETAIN(CZ_POP());
 	send2(CZ_SYMBOL("call"));
+	CZ_RESTORE();
 	return self;
 }
 
@@ -294,26 +330,34 @@ Quotation_cons(CzState *cz, OBJ self)
 }
 
 OBJ
-Quotation_times(CzState *cz, OBJ self)
+Quotation_uncons(CzState *cz, OBJ self)
 {
-	OBJ times;
-	int i;
-	times = CZ_POP();
-	for (i = 0; i < CZ_FIX2INT(times); i++) {
-		CZ_PUSH(self);
-		send2(CZ_SYMBOL("call"));
-	}
-	return self;
+	OBJ obj;
+	obj = Quotation_uncons_(cz, CZ_AS(Quotation, self));
+	CZ_PUSH(obj);
+	CZ_PUSH(self);
+	return (OBJ)self;
+}
+
+OBJ
+Quotation_cat(CzState *cz, OBJ self)
+{
+	OBJ other;
+	other = CZ_POP();
+	self = Quotation_concat_(cz, CZ_AS(Quotation, other), CZ_AS(Quotation, self));
+	CZ_PUSH(self);
+	return (OBJ)self;
 }
 
 void
 cz_bootstrap_quotation(CzState *cz)
 {
-	cz_define_method(Quotation,   "at", Quotation_at);
-	cz_define_method(Quotation, "call", Quotation_call);
-	cz_define_method(Quotation, "push", Quotation_push);
-	cz_define_method(Quotation, "cons", Quotation_cons);
-	cz_define_method(Quotation,  "dip", Quotation_dip);
-	cz_define_method(Quotation,   "if", Quotation_if);
-	cz_define_method(Quotation, "times", Quotation_times);
+	cz_define_method(Quotation,     "at", Quotation_at);
+	cz_define_method(Quotation,   "call", Quotation_call);
+	cz_define_method(Quotation,   "push", Quotation_push);
+	cz_define_method(Quotation,   "cons", Quotation_cons);
+	cz_define_method(Quotation, "uncons", Quotation_uncons);
+	cz_define_method(Quotation,    "cat", Quotation_cat);
+	cz_define_method(Quotation,    "dip", Quotation_dip);
+	cz_define_method(Quotation,     "if", Quotation_if);
 }

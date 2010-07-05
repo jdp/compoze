@@ -16,6 +16,15 @@
 
 #include "compoze.h"
 
+CzMethod *
+Method_create_(CzState *cz, CzQuotation *quot, cz_methodfn fn)
+{
+	CzMethod *method = CZ_ALLOC(CzMethod);
+	method->definition = quot;
+	method->fn = fn;
+	return method;
+}
+
 /*
  * Given a parent VTable, the function returns a new VTable inheriting
  * from the provided parent VTable.
@@ -47,14 +56,19 @@ VTable_allocate_(CzState *cz, CzVTable *self)
  *   in the specified vtable.
  * The method itself is returned.
  */
-CzMethod
-VTable_add_method_(CzState *cz, CzVTable *self, OBJ key, CzMethod method)
+CzMethod *
+VTable_add_method_(CzState *cz, CzVTable *self, OBJ key, CzMethod *method)
 {
-	CzMethod m;
+	CzMethod *m;
 	
-	m = (CzMethod)Table_lookup_(cz, self->table, CZ_AS(Symbol, key)->hash, key);
+	m = (CzMethod *)Table_lookup_(cz, self->table, CZ_AS(Symbol, key)->hash, key);
 	if ((OBJ)m == CZ_UNDEFINED) {
 		m = method;
+		if (m->definition != NULL) {
+			printf("defined %s [ hash => %lu, OBJ => %lu ] to [ ", CZ_AS(Symbol, key)->string, CZ_AS(Symbol, key)->hash, key);
+			cz_tree(cz, m->definition, 0);
+			printf("]\n");
+		}
 		Table_insert_(cz, self->table, CZ_AS(Symbol, key)->hash, key, (OBJ)m);
 	}
 	return m;
@@ -82,7 +96,7 @@ VTable_lookup_(CzState *cz, CzVTable *self, OBJ key)
 OBJ
 bind(CzState *cz, OBJ rcv, OBJ msg)
 {
-	CzMethod m;
+	CzMethod *m;
 	CzVTable *vt;
 	
 	/*
@@ -91,7 +105,7 @@ bind(CzState *cz, OBJ rcv, OBJ msg)
       : (CzMethod)send(vt, CZ_SYMBOL("__lookup__"), msg);
     */
 	vt = CZ_PROTO(rcv);
-    m = (CzMethod)VTable_lookup_(cz, vt, msg);
+    m = (CzMethod *)VTable_lookup_(cz, vt, msg);
 	return (OBJ)m;
 }
 
@@ -126,6 +140,20 @@ Object_nil(CzState *cz, OBJ self)
 	CZ_PUSH(self);
 	CZ_PUSH(CZ_NIL);
 	return CZ_NIL;
+}
+
+OBJ
+True_not(CzState *cz, OBJ self)
+{
+	CZ_PUSH(CZ_FALSE);
+	return self;
+}
+
+OBJ
+False_not(CzState *cz, OBJ self)
+{
+	CZ_PUSH(CZ_TRUE);
+	return self;
 }
 
 /*
@@ -264,6 +292,8 @@ bootstrap(CzState *cz)
 	cz->symbols = CZ_AS(Table, Table_create_(cz));
 	cz->strings = CZ_AS(Table, Table_create_(cz));
 	
+	CZ_VTABLE(Method)     = 
+	
 	CZ_VTABLE(VTable)     = VTable_delegated_(cz, 0);
 	CZ_VTABLE(VTable)->vt = CZ_VTABLE(VTable);
 
@@ -274,7 +304,6 @@ bootstrap(CzState *cz)
 	CZ_VTABLE(True)      = VTable_delegated_(cz, CZ_VTABLE(Object));
 	CZ_VTABLE(False)     = VTable_delegated_(cz, CZ_VTABLE(Object));
 	CZ_VTABLE(Symbol)    = VTable_delegated_(cz, CZ_VTABLE(Object));
-	CZ_VTABLE(Word)      = VTable_delegated_(cz, CZ_VTABLE(Object));
 	CZ_VTABLE(Quotation) = VTable_delegated_(cz, CZ_VTABLE(Object));
 	
 	cz_define_method(Object,   "true", Object_true);
@@ -294,6 +323,9 @@ bootstrap(CzState *cz)
 	cz_define_method(Object,   "pick", Object_pick);
 	cz_define_method(Object,     ">r", Object_retain);
 	cz_define_method(Object,     "r>", Object_restore);
+	
+	cz_define_method(True, "not", True_not);
+	cz_define_method(False, "not", False_not);
 	
 	cz_bootstrap_table(cz);
 	cz_bootstrap_quotation(cz);

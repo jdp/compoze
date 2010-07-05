@@ -1,2 +1,6 @@
 # The sip combinator from TTOCC
 : sip ( [B] [A] -- [B] A [B] ) swap dupd swap [ call ] dip ;
+
+# VM Design
+
+Math, test, jump, call, tailcall (goto-ish)

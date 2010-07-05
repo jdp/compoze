@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "compoze.h"
 #include "bufio.h"
 #include "lexer.h"
@@ -48,9 +49,10 @@ Parser_initialize(Parser *p, CzState *cz)
 int
 Parser_parse(Parser *p, CzState *cz, Lexer *l)
 {
-	OBJ o;
+	OBJ o, o2;
 	//int in_def = 0;
 	int token, qdepth = 0;
+	char *defname = NULL;
 	   
 	CZ_PUSH(Quotation_create_(cz));
 	
@@ -60,6 +62,44 @@ Parser_parse(Parser *p, CzState *cz, Lexer *l)
 			/* Keep track of line number */
 			case T_EOL:
 				p->lineno++;
+				break;
+				
+			/* Begin defined word */
+			case T_BDEF:
+				if ((token = Lexer_scan(l)) != T_WORD) {
+					printf("expected word following definition on line %d", p->lineno);
+					return CZ_ERR;
+				}
+				#ifdef DEBUG
+				printf("stack scan at begin BDEF: [ ");
+				cz_tree(cz, cz->data_stack, 0);
+				printf("]\n");
+				#endif
+				qdepth++;
+				defname = strdup(l->buffer);
+				CZ_PUSH(Quotation_create_(cz));
+				#ifdef DEBUG
+				printf("stack scan at end BDEF: [ ");
+				cz_tree(cz, cz->data_stack, 0);
+				printf("]\n");
+				#endif
+				break;
+			
+			/* End defined word */	
+			case T_EDEF:
+				#ifdef DEBUG
+				printf("stack scan at begin EDEF: [ ");
+				cz_tree(cz, cz->data_stack, 0);
+				printf("]\n");
+				#endif
+				o = CZ_POP();
+				assert(cz_proto_id(o) == CZ_T_Quotation);
+				VTable_add_method_(cz, CZ_VTABLE(Object), CZ_SYMBOL(defname), Method_create_(cz, CZ_AS(Quotation, o), Quotation_call));
+				#ifdef DEBUG
+				printf("stack scan at end EDEF: [ ");
+				cz_tree(cz, cz->data_stack, 0);
+				printf("]\n");
+				#endif
 				break;
 				
 			/* Begin quoted code */
@@ -136,7 +176,7 @@ cz_tree(CzState *cz, CzQuotation *q, int depth)
 			printf("W:%d", cz_proto_id(q->items[i]));
 		}
 		if (depth == 0) {
-			printf("\n");
+			//printf("\n");
 		}
 	}
 }

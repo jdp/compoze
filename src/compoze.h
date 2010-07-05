@@ -29,18 +29,17 @@ struct cz_state;
 
 typedef unsigned long OBJ;
 
-typedef OBJ (*cz_methodfn)(struct cz_state *, OBJ, ...);
-typedef cz_methodfn CzMethod;
+typedef OBJ (*cz_methodfn)(struct cz_state *, OBJ);
 
 typedef enum
 {
 	CZ_T_Nil,
 	CZ_T_True,
 	CZ_T_False,
-	CZ_T_VTable,
-	CZ_T_Object,
 	CZ_T_Symbol,
-	CZ_T_Word,
+	CZ_T_VTable,
+	CZ_T_Method,
+	CZ_T_Object,
 	CZ_T_Fixnum,
 	CZ_T_String,
 	CZ_T_Pair,
@@ -91,6 +90,13 @@ typedef struct cz_vtable
 	struct cz_table *table;
 	struct cz_vtable *parent;
 } CzVTable;
+
+typedef struct cz_method
+{
+	CZ_OBJECT_HEADER
+	struct cz_quotation *definition;
+	cz_methodfn fn;
+} CzMethod;
 
 typedef struct cz_object
 {
@@ -156,27 +162,24 @@ typedef struct cz_state
 	int ip;
 } CzState;
 
-#define cz_define_method(T, S, M) VTable_add_method_(cz, CZ_VTABLE(T), CZ_SYMBOL(S), (CzMethod)M)
-
-#define send(RCV, MSG, ARGS...) ({ \
-	OBJ r = (OBJ)(RCV); \
-	OBJ m = bind(cz, r, (MSG)); \
-	if (CZ_IS_IMMEDIATE(m)) { \
-		printf("what the fuck %lu!!!\n", m); \
-	} \
-	((CzMethod)m)(cz, r, ##ARGS); \
-	CZ_POP(); \
-})
+#define cz_define_method(T, S, M) VTable_add_method_(cz, CZ_VTABLE(T), CZ_SYMBOL(S), Method_create_(cz, NULL, M))
 
 #define send2(MSG) ({ \
 	OBJ r = Quotation_pop_(cz, cz->data_stack); \
 	OBJ m = bind(cz, r, (MSG)); \
 	if (m != CZ_UNDEFINED) { \
-		((CzMethod)m)(cz, r); \
+		if (CZ_AS(Method, m)->definition != NULL) { \
+			CZ_PUSH(r); \
+			CZ_PUSH(CZ_AS(Method, m)->definition); \
+			Quotation_call(cz, CZ_POP()); \
+		} \
+		else { \
+			(CZ_AS(Method, m)->fn)(cz, r); \
+		} \
 	} \
 	else { \
 		Quotation_push_(cz, cz->data_stack, r); \
-		printf("object does not respond to message\n"); \
+		printf("object does not respond to message (%lu)\n", MSG); \
 	} \
 })
 
@@ -185,7 +188,14 @@ typedef struct cz_state
 #define CZ_SWAP()    (Quotation_swap_(cz, cz->data_stack))
 #define CZ_PEEK(s)   (CZ_AS(Quotation, s)->items[CZ_AS(Quotation, s)->size-1])
 #define CZ_RETAIN(o) (Quotation_push_(cz, cz->retain_stack, (o)))
-#define CZ_RESTORE() (Quotation_push_(cz, cz->data_stack, Quotation_pop_(cz, cz->retain_stack)))
+#define CZ_RESTORE() ({ \
+	OBJ o; \
+	CzQuotation *call; \
+	o = Quotation_pop_(cz, cz->retain_stack); \
+	call = CZ_AS(Quotation, Quotation_pop_(cz, cz->call_stack)); \
+	Quotation_insert_(cz, CZ_AS(Quotation, call->items[0]), o, CZ_FIX2INT(call->items[1])); \
+	Quotation_push_(cz, cz->call_stack, (OBJ)call); \
+})
 
 OBJ djb2_hash(void *, size_t);
 
@@ -201,9 +211,11 @@ int bootstrap(CzState *);
 
 inline void *alloc(size_t);
 
+CzMethod *Method_create_(CzState *, CzQuotation *, cz_methodfn);
+
 CzVTable *VTable_delegated_(CzState *, CzVTable *);
 CzObject *VTable_allocate_(CzState *, CzVTable *);
-CzMethod VTable_add_method_(CzState *, CzVTable *, OBJ, CzMethod);
+CzMethod *VTable_add_method_(CzState *, CzVTable *, OBJ, CzMethod *);
 OBJ VTable_lookup_(CzState *, CzVTable *, OBJ);
 
 OBJ bind(CzState *, OBJ, OBJ);
@@ -259,6 +271,7 @@ OBJ  Quotation_pop_(CzState *, CzQuotation *);
 OBJ  Quotation_drop_(CzState *, CzQuotation *);
 OBJ  Quotation_dup_(CzState *, CzQuotation *);
 OBJ  Quotation_swap_(CzState *, CzQuotation *);
+OBJ  Quotation_insert_(CzState *, CzQuotation *, OBJ, int);
 OBJ  Quotation_concat_(CzState *, CzQuotation *, CzQuotation *);
 OBJ  Quotation_cons_(CzState *, CzQuotation *, OBJ);
 
@@ -275,6 +288,11 @@ void cz_bootstrap_quotation(CzState *);
 
 OBJ Fixnum_add(CzState *, OBJ);
 OBJ Fixnum_subtract(CzState *, OBJ);
+OBJ Fixnum_multiply(CzState *, OBJ);
+OBJ Fixnum_divide(CzState *, OBJ);
+OBJ Fixnum_less_than(CzState *, OBJ);
+OBJ Fixnum_greater_than(CzState *, OBJ);
+
 void cz_bootstrap_fixnum(CzState *);
 
 #endif /* COMPOZE_H */

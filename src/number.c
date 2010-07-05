@@ -22,6 +22,42 @@ Fixnum_subtract(CzState *cz, OBJ self)
 }
 
 OBJ
+Fixnum_multiply(CzState *cz, OBJ self)
+{
+	OBJ other;
+	other = CZ_POP();
+	CZ_PUSH(MATH(other, *, self));
+	return CZ_NIL;
+}
+
+OBJ
+Fixnum_divide(CzState *cz, OBJ self)
+{
+	OBJ other;
+	other = CZ_POP();
+	CZ_PUSH(MATH(other, /, self));
+	return CZ_NIL;
+}
+
+OBJ
+Fixnum_less_than(CzState *cz, OBJ self)
+{
+	OBJ other;
+	other = CZ_POP();
+	CZ_PUSH(CMP(other, <, self));
+	return CZ_NIL;
+}
+
+OBJ
+Fixnum_greater_than(CzState *cz, OBJ self)
+{
+	OBJ other;
+	other = CZ_POP();
+	CZ_PUSH(CMP(other, >, self));
+	return CZ_NIL;
+}
+
+OBJ
 Fixnum_to_string(CzState *cz, OBJ self)
 {
 	OBJ str;
@@ -41,6 +77,14 @@ cz_bootstrap_fixnum(CzState *cz)
 	cz_define_method(Fixnum, "+", Fixnum_add);
 	cz_define_method(Fixnum, "sub", Fixnum_subtract);
 	cz_define_method(Fixnum, "-", Fixnum_subtract);
+	cz_define_method(Fixnum, "mul", Fixnum_multiply);
+	cz_define_method(Fixnum, "*", Fixnum_multiply);
+	cz_define_method(Fixnum, "div", Fixnum_divide);
+	cz_define_method(Fixnum, "/", Fixnum_divide);
+	cz_define_method(Fixnum, "lt", Fixnum_less_than);
+	cz_define_method(Fixnum, "<", Fixnum_less_than);
+	cz_define_method(Fixnum, "gt", Fixnum_greater_than);
+	cz_define_method(Fixnum, ">", Fixnum_greater_than);
 	cz_define_method(Fixnum, "to-string", Fixnum_to_string);
 }
 

@@ -62,10 +62,8 @@ OBJ
 Table_insert_(CzState *cz, CzTable *self, OBJ hash, OBJ key, OBJ value)
 {
 	OBJ pair;
-	//printf("attempting to insert %s\n", CZ_AS(Symbol, key)->string);
 	pair = Pair_create_(cz, (OBJ)hash, (OBJ)key, (OBJ)value);
 	Table_insert_pair_(cz, self, CZ_AS(Pair, pair));
-	//printf("inserted %s\n", CZ_AS(Symbol, key)->string);
 	return (OBJ)self;
 }
 
